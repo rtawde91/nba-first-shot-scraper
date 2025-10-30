@@ -152,6 +152,45 @@
             white-space: normal;
             word-wrap: break-word;
             max-width: 100px;
+            position: relative;
+        }
+        
+        .player-tooltip {
+            position: fixed;
+            display: none;
+            background: #2d3748;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 9999;
+            min-width: 220px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            pointer-events: none;
+        }
+        
+        .player-name.show-tooltip .player-tooltip {
+            display: block;
+        }
+        
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .tooltip-row:last-child {
+            border-bottom: none;
+        }
+        
+        .tooltip-label {
+            color: #a0aec0;
+        }
+        
+        .tooltip-value {
+            font-weight: 600;
+            color: #48bb78;
         }
 
         .data-table tbody tr.game-row {
@@ -380,10 +419,73 @@
             </div>
         </div>
 
+        <!-- Scoring Metrics Configuration -->
+        <div class="main-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin-bottom: 20px;">
+            <h2 style="margin: 0 0 15px 0; color: white;">⚙️ Scoring Metrics Configuration</h2>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <label style="display: block; font-size: 11px; margin-bottom: 5px; opacity: 0.9;">Takes First Shot & Makes It</label>
+                    <input type="number" id="score_first_shot_made" value="1.0" step="0.25" min="0" max="10"
+                           onchange="recalculateScores()"
+                           style="width: 100%; padding: 8px; border-radius: 4px; border: none; font-size: 14px; font-weight: 600;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; margin-bottom: 5px; opacity: 0.9;">Takes First Shot & Misses It</label>
+                    <input type="number" id="score_first_shot_missed" value="0.75" step="0.25" min="0" max="10"
+                           onchange="recalculateScores()"
+                           style="width: 100%; padding: 8px; border-radius: 4px; border: none; font-size: 14px; font-weight: 600;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; margin-bottom: 5px; opacity: 0.9;">Made First FG (but wasn't first shot)</label>
+                    <input type="number" id="score_first_fg_made" value="0.5" step="0.25" min="0" max="10"
+                           onchange="recalculateScores()"
+                           style="width: 100%; padding: 8px; border-radius: 4px; border: none; font-size: 14px; font-weight: 600;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; margin-bottom: 5px; opacity: 0.9;">Missed a Shot Before First FG</label>
+                    <input type="number" id="score_missed_shot" value="0.25" step="0.25" min="0" max="10"
+                           onchange="recalculateScores()"
+                           style="width: 100%; padding: 8px; border-radius: 4px; border: none; font-size: 14px; font-weight: 600;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; margin-bottom: 5px; opacity: 0.9;">Took Free Throws Before First FG</label>
+                    <input type="number" id="score_free_throw" value="1.0" step="0.25" min="0" max="10"
+                           onchange="recalculateScores()"
+                           style="width: 100%; padding: 8px; border-radius: 4px; border: none; font-size: 14px; font-weight: 600;">
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <label style="display: block; font-size: 11px; margin-bottom: 5px; opacity: 0.9;">Top Players Threshold (Min Avg Score)</label>
+                    <input type="number" id="top_players_threshold" value="0.25" step="0.05" min="0" max="5"
+                           onchange="recalculateScores()"
+                           style="width: 100%; padding: 8px; border-radius: 4px; border: none; font-size: 14px; font-weight: 600;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; margin-bottom: 5px; opacity: 0.9;">Yellow Highlight Threshold (Avg Score)</label>
+                    <input type="number" id="yellow_threshold" value="0.4" step="0.05" min="0" max="5"
+                           onchange="recalculateScores()"
+                           style="width: 100%; padding: 8px; border-radius: 4px; border: none; font-size: 14px; font-weight: 600;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; margin-bottom: 5px; opacity: 0.9;">Green Highlight Threshold (Avg Score)</label>
+                    <input type="number" id="green_threshold" value="0.7" step="0.05" min="0" max="5"
+                           onchange="recalculateScores()"
+                           style="width: 100%; padding: 8px; border-radius: 4px; border: none; font-size: 14px; font-weight: 600;">
+                </div>
+            </div>
+            <div style="margin-top: 15px; text-align: right;">
+                <button onclick="resetScoringMetrics()" 
+                        style="padding: 8px 16px; background: white; color: #667eea; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+                    🔄 Reset to Defaults
+                </button>
+            </div>
+        </div>
+
         <!-- Upcoming Games -->
         <div class="main-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="color: #2d3748; margin: 0;">🔮 Upcoming Games with Player Scores</h2>
+                <h2 style="color: #2d3748; margin: 0;">🔮 Upcoming Games</h2>
                 <div id="filterIndicator" style="display: none;">
                     <button onclick="filterByGameKey(null)" 
                             onmouseover="this.style.background='#f56565'" 
@@ -405,9 +507,15 @@
         <div class="main-card">
             <h3 style="margin-bottom: 15px; color: #2d3748;">Player Score Legend</h3>
             <div style="background: #f7fafc; padding: 15px; border-radius: 8px; font-size: 13px;">
-                <p><strong>Shot Score:</strong> Calculated as (Made First FG × 1.0) + (Missed/FT Before First FG × 0.5)</p>
+                <p><strong>Shot Score:</strong> Calculated based on the scoring metrics configured above. Adjust the values to see how scores change dynamically!</p>
                 <p style="margin-top: 10px;"><strong>Games Started:</strong> Total number of games the player has started</p>
                 <p style="margin-top: 10px;"><strong>Format:</strong> Shot Score / Games Started</p>
+                <p style="margin-top: 10px;"><strong>Color Highlights in Upcoming Games:</strong></p>
+                <ul style="margin-left: 20px; margin-top: 5px;">
+                    <li><span style="background: #f3f4f6; padding: 2px 6px; border-radius: 3px; opacity: 0.6;">Grey</span> - Player has 0 total score</li>
+                    <li><span style="background: #fef3c7; padding: 2px 6px; border-radius: 3px;">Yellow</span> - Average score ≥ Yellow Threshold (adjustable above)</li>
+                    <li><span style="background: #d1fae5; padding: 2px 6px; border-radius: 3px;">Green</span> - Average score ≥ Green Threshold (adjustable above)</li>
+                </ul>
             </div>
         </div>
 
@@ -424,29 +532,33 @@
                             style="padding: 8px 16px; border: 2px solid #667eea; background: white; color: #667eea; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         By Team
                     </button>
+                    <button id="viewByPlayerBtn" onclick="switchHistoricalView('player')" 
+                            style="padding: 8px 16px; border: 2px solid #667eea; background: white; color: #667eea; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        By Player
+                    </button>
                 </div>
             </div>
             <div class="legend" style="margin-bottom: 20px;">
                 <strong>Legend:</strong>
                 <div class="legend-item">
                     <span class="legend-color highlight-first-shot-made" style="padding: 4px 8px;">Bright Green</span>
-                    <span>Took & made the FIRST shot of the game (+2.0)</span>
+                    <span>Took & made the FIRST shot of the game (<span id="legend_first_shot_made">+2.0</span>)</span>
                 </div>
                 <div class="legend-item">
                     <span class="legend-color highlight-first-shot-missed" style="padding: 4px 8px;">Bright Yellow</span>
-                    <span>Took & missed the FIRST shot of the game (+1.0)</span>
+                    <span>Took & missed the FIRST shot of the game (<span id="legend_first_shot_missed">+1.0</span>)</span>
                 </div>
                 <div class="legend-item">
                     <span class="legend-color highlight-first-fg-made" style="padding: 4px 8px;">Green</span>
-                    <span>Made first FG (but wasn't first shot) (+0.75)</span>
+                    <span>Made first FG (but wasn't first shot) (<span id="legend_first_fg_made">+0.75</span>)</span>
                 </div>
                 <div class="legend-item">
                     <span class="legend-color highlight-missed-shot" style="padding: 4px 8px;">Yellow</span>
-                    <span>Missed shot before first FG (+0.5)</span>
+                    <span>Missed shot before first FG (<span id="legend_missed_shot">+0.5</span>)</span>
                 </div>
                 <div class="legend-item">
                     <span class="legend-color highlight-free-throw" style="padding: 4px 8px;">Outline</span>
-                    <span>Took free throws before first FG (+0.25)</span>
+                    <span>Took free throws before first FG (<span id="legend_free_throw">+0.25</span>)</span>
                 </div>
             </div>
             <div id="analysisContent">
@@ -466,6 +578,142 @@
         let selectedGameKey = null; // For filtering by game
         let upcomingGamesData = []; // Store upcoming games data
         let playerScoresData = {}; // Store player scores data
+        let rawAnalysisData = null; // Store raw analysis data for recalculation
+
+        function getScoringMetrics() {
+            const getValue = (id, defaultVal) => {
+                const val = document.getElementById(id).value;
+                return val === '' ? defaultVal : parseFloat(val);
+            };
+            
+            return {
+                first_shot_made: getValue('score_first_shot_made', 1.0),
+                first_shot_missed: getValue('score_first_shot_missed', 0.75),
+                first_fg_made: getValue('score_first_fg_made', 0.5),
+                missed_shot: getValue('score_missed_shot', 0.25),
+                free_throw: getValue('score_free_throw', 1.0)
+            };
+        }
+
+        function calculatePlayerScoresFromData(analysisData) {
+            const metrics = getScoringMetrics();
+            const scores = {};
+            
+            analysisData.forEach(game => {
+                const highlights = game.highlights || {};
+                const allStarters = [...(game.visitor_starters || []), ...(game.home_starters || [])];
+                
+                allStarters.forEach(player => {
+                    if (!player || player === '') return;
+                    
+                    if (!scores[player]) {
+                        scores[player] = {
+                            shot_score: 0,
+                            games_started: 0,
+                            first_shot_made: 0,
+                            first_shot_missed: 0,
+                            first_fg_made: 0,
+                            missed_shot: 0,
+                            free_throw: 0
+                        };
+                    }
+                    
+                    scores[player].games_started++;
+                    
+                    // Handle both old format (single string) and new format (array of strings)
+                    const playerHighlights = highlights[player];
+                    const highlightsList = Array.isArray(playerHighlights) ? playerHighlights : (playerHighlights ? [playerHighlights] : []);
+                    
+                    // Process ALL highlights for this player in this game
+                    highlightsList.forEach(highlightType => {
+                        if (highlightType === 'first_shot_made') {
+                            scores[player].shot_score += metrics.first_shot_made;
+                            scores[player].first_shot_made++;
+                        } else if (highlightType === 'first_shot_missed') {
+                            scores[player].shot_score += metrics.first_shot_missed;
+                            scores[player].first_shot_missed++;
+                        } else if (highlightType === 'first_fg_made') {
+                            scores[player].shot_score += metrics.first_fg_made;
+                            scores[player].first_fg_made++;
+                        } else if (highlightType === 'missed_shot') {
+                            scores[player].shot_score += metrics.missed_shot;
+                            scores[player].missed_shot++;
+                        } else if (highlightType === 'free_throw') {
+                            scores[player].shot_score += metrics.free_throw;
+                            scores[player].free_throw++;
+                        }
+                    });
+                });
+            });
+            
+            return scores;
+        }
+
+        function recalculateScores() {
+            if (!rawAnalysisData) return;
+            
+            console.log('Recalculating scores with new metrics...');
+            
+            // Update legend values
+            const metrics = getScoringMetrics();
+            console.log('New metrics:', metrics);
+            
+            document.getElementById('legend_first_shot_made').textContent = `+${metrics.first_shot_made.toFixed(2)}`;
+            document.getElementById('legend_first_shot_missed').textContent = `+${metrics.first_shot_missed.toFixed(2)}`;
+            document.getElementById('legend_first_fg_made').textContent = `+${metrics.first_fg_made.toFixed(2)}`;
+            document.getElementById('legend_missed_shot').textContent = `+${metrics.missed_shot.toFixed(2)}`;
+            document.getElementById('legend_free_throw').textContent = `+${metrics.free_throw.toFixed(2)}`;
+            
+            // Recalculate player scores with new metrics
+            playerScoresData = calculatePlayerScoresFromData(rawAnalysisData);
+            console.log('Recalculated player scores:', Object.keys(playerScoresData).length, 'players');
+            
+            // Re-render upcoming games and historical views
+            if (upcomingGamesData.length > 0) {
+                console.log('Re-rendering upcoming games...');
+                renderUpcomingGames(upcomingGamesData, playerScoresData);
+            }
+            
+            if (currentHistoricalView === 'game') {
+                console.log('Re-rendering historical analysis (By Game view)...');
+                renderAnalysisTable(rawAnalysisData);
+            } else if (currentHistoricalView === 'team') {
+                console.log('Re-rendering historical analysis (By Team view)...');
+                renderAnalysisTableByTeam(rawAnalysisData);
+            } else if (currentHistoricalView === 'player') {
+                console.log('Re-rendering historical analysis (By Player view)...');
+                renderAnalysisTableByPlayer(rawAnalysisData);
+            }
+            
+            console.log('Recalculation complete!');
+        }
+
+        function resetScoringMetrics() {
+            document.getElementById('score_first_shot_made').value = 1.0;
+            document.getElementById('score_first_shot_missed').value = 0.75;
+            document.getElementById('score_first_fg_made').value = 0.5;
+            document.getElementById('score_missed_shot').value = 0.25;
+            document.getElementById('score_free_throw').value = 1.0;
+            document.getElementById('top_players_threshold').value = 0.25;
+            document.getElementById('yellow_threshold').value = 0.4;
+            document.getElementById('green_threshold').value = 0.7;
+            recalculateScores();
+        }
+        
+        function getTopPlayersThreshold() {
+            const val = document.getElementById('top_players_threshold').value;
+            return val === '' ? 0.25 : parseFloat(val);
+        }
+        
+        function getYellowThreshold() {
+            const val = document.getElementById('yellow_threshold').value;
+            return val === '' ? 0.4 : parseFloat(val);
+        }
+        
+        function getGreenThreshold() {
+            const val = document.getElementById('green_threshold').value;
+            return val === '' ? 0.7 : parseFloat(val);
+        }
 
         async function loadPBPData() {
             if (pbpDataCache) return pbpDataCache;
@@ -576,9 +824,15 @@
                     return;
                 }
 
-                // Render upcoming games with player scores
+                // Store raw analysis data for recalculation
+                rawAnalysisData = data.analysis || [];
+                
+                // Calculate player scores using current metrics
+                playerScoresData = calculatePlayerScoresFromData(rawAnalysisData);
+
+                // Render upcoming games with calculated player scores
                 if (data.upcoming_games && data.upcoming_games.length > 0) {
-                    renderUpcomingGames(data.upcoming_games, data.player_scores || {});
+                    renderUpcomingGames(data.upcoming_games, playerScoresData);
                 } else {
                     upcomingContent.innerHTML = `
                         <div class="empty-state">
@@ -590,8 +844,8 @@
                 }
 
                 // Render historical analysis table
-                if (data.analysis && data.analysis.length > 0) {
-                    renderAnalysisTable(data.analysis);
+                if (rawAnalysisData.length > 0) {
+                    renderAnalysisTable(rawAnalysisData);
                 } else {
                     analysisContent.innerHTML = `
                         <div class="empty-state">
@@ -640,6 +894,8 @@
             
             if (currentHistoricalView === 'team') {
                 renderAnalysisTableByTeam(analysisData);
+            } else if (currentHistoricalView === 'player') {
+                renderAnalysisTableByPlayer(analysisData);
             } else {
                 renderAnalysisTable(analysisData);
             }
@@ -661,14 +917,103 @@
             };
             
             const getScoreStyle = (playerName) => {
-                if (!playerName || playerName === '') return '';
+                if (!playerName || playerName === '') return { scoreStyle: '', cellStyle: '' };
                 const score = playerScores[playerName];
-                if (score && score.shot_score > 0) {
-                    const ratio = score.shot_score / score.games_started;
-                    if (ratio >= 0.7) return 'background: #48bb78; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 600;';
-                    if (ratio >= 0.4) return 'background: #ecc94b; color: #2d3748; padding: 2px 6px; border-radius: 4px; font-weight: 600;';
+                
+                if (!score || score.shot_score === 0) {
+                    // Grey out the entire cell for zero scores
+                    return { 
+                        scoreStyle: '', 
+                        cellStyle: 'opacity: 0.4; background: #f3f4f6;' 
+                    };
                 }
-                return '';
+                
+                if (score.shot_score > 0) {
+                    const ratio = score.shot_score / score.games_started;
+                    const greenThreshold = getGreenThreshold();
+                    const yellowThreshold = getYellowThreshold();
+                    
+                    if (ratio >= greenThreshold) {
+                        return { 
+                            scoreStyle: 'background: #48bb78; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 600;',
+                            cellStyle: 'background: #d1fae5;' // Light green background for whole cell
+                        };
+                    }
+                    if (ratio >= yellowThreshold) {
+                        return { 
+                            scoreStyle: 'background: #ecc94b; color: #2d3748; padding: 2px 6px; border-radius: 4px; font-weight: 600;',
+                            cellStyle: 'background: #fef3c7;' // Light yellow background for whole cell
+                        };
+                    }
+                }
+                return { scoreStyle: '', cellStyle: '' };
+            };
+            
+            // Generate tooltip HTML with player stats breakdown
+            const generatePlayerTooltip = (playerName) => {
+                if (!playerName || playerName === '') return '';
+                
+                const stats = playerScores[playerName];
+                if (!stats) return '';
+                
+                return `
+                    <div class="player-tooltip">
+                        <div style="font-weight: 700; margin-bottom: 8px; font-size: 13px; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 5px;">${playerName}</div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Games Started:</span>
+                            <span class="tooltip-value">${stats.games_started || 0}</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Took & Made First Shot:</span>
+                            <span class="tooltip-value">${stats.first_shot_made || 0}</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Took & Missed First Shot:</span>
+                            <span class="tooltip-value">${stats.first_shot_missed || 0}</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Made First FG (wasn't first shot):</span>
+                            <span class="tooltip-value">${stats.first_fg_made || 0}</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Missed Shot Before First FG:</span>
+                            <span class="tooltip-value">${stats.missed_shot || 0}</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Took FTs:</span>
+                            <span class="tooltip-value">${stats.free_throw || 0}</span>
+                        </div>
+                        <div style="margin-top: 8px; padding-top: 8px; border-top: 2px solid rgba(255,255,255,0.2); font-weight: 700;">
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Total Score:</span>
+                                <span class="tooltip-value" style="color: #fbbf24;">${stats.shot_score.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            };
+            
+            // Format player name: First name on line 1, Last name(s) on line 2, max 15 chars per line
+            const formatPlayerName = (playerName) => {
+                if (!playerName || playerName === '') return '<div></div>';
+                
+                const parts = playerName.trim().split(' ');
+                if (parts.length === 0) return '<div></div>';
+                
+                const firstName = parts[0];
+                const lastName = parts.slice(1).join(' ');
+                
+                const truncate = (str, maxLen) => {
+                    if (str.length <= maxLen) return str;
+                    return str.substring(0, maxLen - 3) + '...';
+                };
+                
+                return `
+                    <div style="text-align: center; line-height: 1.2;">
+                        <div style="font-size: 10px;">${truncate(firstName, 15)}</div>
+                        <div style="font-size: 10px;">${lastName ? truncate(lastName, 15) : ''}</div>
+                    </div>
+                `;
             };
             
             // Filter games if a game key is selected
@@ -689,6 +1034,9 @@
             // Sort dates (today first, then tomorrow)
             const sortedDates = Object.keys(gamesByDate).sort();
             
+            // Get threshold once for use in headers
+            const threshold = getTopPlayersThreshold();
+            
             // Render games grouped by date with collapsible sections
             const html = sortedDates.map(date => {
                 const games = gamesByDate[date];
@@ -703,72 +1051,122 @@
                         <div id="date-${dateId}" style="margin-top: 10px;">
                             <div style="overflow-x: auto;">
                                 <table class="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th title="Click on a game key to filter data">Game Key 🔍</th>
-                                            <th>Matchup</th>
-                                            <th>V Starter 1</th>
-                                            <th>V Starter 2</th>
-                                            <th>V Starter 3</th>
-                                            <th>V Starter 4</th>
-                                            <th>V Starter 5</th>
-                                            <th>H Starter 1</th>
-                                            <th>H Starter 2</th>
-                                            <th>H Starter 3</th>
-                                            <th>H Starter 4</th>
-                                            <th>H Starter 5</th>
-                                        </tr>
-                                    </thead>
+                                                    <thead>
+                                                        <tr>
+                                                            <th title="Click on matchup to filter data" style="cursor: pointer;">Matchup 🔍</th>
+                                                            <th>V Starter 1</th>
+                                                            <th>V Starter 2</th>
+                                                            <th>V Starter 3</th>
+                                                            <th>V Starter 4</th>
+                                                            <th>V Starter 5</th>
+                                                            <th>H Starter 1</th>
+                                                            <th>H Starter 2</th>
+                                                            <th>H Starter 3</th>
+                                                            <th>H Starter 4</th>
+                                                            <th>H Starter 5</th>
+                                                            <th style="min-width: 120px;">Top Players (>${threshold.toFixed(2)})</th>
+                                                        </tr>
+                                                    </thead>
                                     <tbody>
                                         ${games.map(game => {
                                             const isSelected = selectedGameKey === game.game_key;
-                                            const gameKeyStyle = isSelected 
+                                            const matchupStyle = isSelected 
                                                 ? 'cursor: pointer; color: #667eea; font-weight: 700; text-decoration: underline; background: #eef2ff;'
                                                 : 'cursor: pointer; color: #667eea; font-weight: 600; text-decoration: underline;';
                                             
+                                            // Collect all players from this game and their scores
+                                            const allPlayers = [
+                                                game.V_s1, game.V_s2, game.V_s3, game.V_s4, game.V_s5,
+                                                game.H_s1, game.H_s2, game.H_s3, game.H_s4, game.H_s5
+                                            ].filter(p => p && p !== '');
+                                            
+                                            // Filter players with avg score > threshold
+                                            const topPlayers = allPlayers
+                                                .map(player => {
+                                                    const score = playerScores[player];
+                                                    if (score && score.games_started > 0) {
+                                                        const avgScore = score.shot_score / score.games_started;
+                                                        return { name: player, avgScore: avgScore };
+                                                    }
+                                                    return null;
+                                                })
+                                                .filter(p => p && p.avgScore > threshold)
+                                                .sort((a, b) => b.avgScore - a.avgScore);
+                                            
+                                            const topPlayersHTML = topPlayers.length > 0 
+                                                ? topPlayers.map(p => `
+                                                    <div style="font-size: 9px; padding: 2px 0; white-space: nowrap;">
+                                                        ${p.name}: <strong>${p.avgScore.toFixed(2)}</strong>
+                                                    </div>
+                                                `).join('')
+                                                : '<div style="font-size: 9px; color: #9ca3af;">None</div>';
+                                            
+                                            const v1Style = getScoreStyle(game.V_s1);
+                                            const v2Style = getScoreStyle(game.V_s2);
+                                            const v3Style = getScoreStyle(game.V_s3);
+                                            const v4Style = getScoreStyle(game.V_s4);
+                                            const v5Style = getScoreStyle(game.V_s5);
+                                            const h1Style = getScoreStyle(game.H_s1);
+                                            const h2Style = getScoreStyle(game.H_s2);
+                                            const h3Style = getScoreStyle(game.H_s3);
+                                            const h4Style = getScoreStyle(game.H_s4);
+                                            const h5Style = getScoreStyle(game.H_s5);
+                                            
                                             return `
                                                 <tr>
-                                                    <td style="${gameKeyStyle}" onclick="filterByGameKey('${game.game_key || ''}')" title="Click to filter">${game.game_key || ''}</td>
-                                                    <td>${game.matchup || ''}</td>
-                                                    <td class="player-name">
-                                                        <div>${game.V_s1 || ''}</div>
-                                                        <div style="font-size: 9px; color: #667eea; ${getScoreStyle(game.V_s1)}">${getPlayerScoreDisplay(game.V_s1)}</div>
+                                                    <td style="${matchupStyle}" onclick="filterByGameKey('${game.game_key || ''}')" title="Click to filter">${game.matchup || ''}</td>
+                                                    <td class="player-name" style="padding: 4px 8px; ${v1Style.cellStyle}">
+                                                        ${formatPlayerName(game.V_s1)}
+                                                        <div style="font-size: 8px; color: #667eea; ${v1Style.scoreStyle} margin-top: 2px; text-align: center;">${getPlayerScoreDisplay(game.V_s1)}</div>
+                                                        ${generatePlayerTooltip(game.V_s1)}
                                                     </td>
-                                                    <td class="player-name">
-                                                        <div>${game.V_s2 || ''}</div>
-                                                        <div style="font-size: 9px; color: #667eea; ${getScoreStyle(game.V_s2)}">${getPlayerScoreDisplay(game.V_s2)}</div>
+                                                    <td class="player-name" style="padding: 4px 8px; ${v2Style.cellStyle}">
+                                                        ${formatPlayerName(game.V_s2)}
+                                                        <div style="font-size: 8px; color: #667eea; ${v2Style.scoreStyle} margin-top: 2px; text-align: center;">${getPlayerScoreDisplay(game.V_s2)}</div>
+                                                        ${generatePlayerTooltip(game.V_s2)}
                                                     </td>
-                                                    <td class="player-name">
-                                                        <div>${game.V_s3 || ''}</div>
-                                                        <div style="font-size: 9px; color: #667eea; ${getScoreStyle(game.V_s3)}">${getPlayerScoreDisplay(game.V_s3)}</div>
+                                                    <td class="player-name" style="padding: 4px 8px; ${v3Style.cellStyle}">
+                                                        ${formatPlayerName(game.V_s3)}
+                                                        <div style="font-size: 8px; color: #667eea; ${v3Style.scoreStyle} margin-top: 2px; text-align: center;">${getPlayerScoreDisplay(game.V_s3)}</div>
+                                                        ${generatePlayerTooltip(game.V_s3)}
                                                     </td>
-                                                    <td class="player-name">
-                                                        <div>${game.V_s4 || ''}</div>
-                                                        <div style="font-size: 9px; color: #667eea; ${getScoreStyle(game.V_s4)}">${getPlayerScoreDisplay(game.V_s4)}</div>
+                                                    <td class="player-name" style="padding: 4px 8px; ${v4Style.cellStyle}">
+                                                        ${formatPlayerName(game.V_s4)}
+                                                        <div style="font-size: 8px; color: #667eea; ${v4Style.scoreStyle} margin-top: 2px; text-align: center;">${getPlayerScoreDisplay(game.V_s4)}</div>
+                                                        ${generatePlayerTooltip(game.V_s4)}
                                                     </td>
-                                                    <td class="player-name">
-                                                        <div>${game.V_s5 || ''}</div>
-                                                        <div style="font-size: 9px; color: #667eea; ${getScoreStyle(game.V_s5)}">${getPlayerScoreDisplay(game.V_s5)}</div>
+                                                    <td class="player-name" style="padding: 4px 8px; ${v5Style.cellStyle}">
+                                                        ${formatPlayerName(game.V_s5)}
+                                                        <div style="font-size: 8px; color: #667eea; ${v5Style.scoreStyle} margin-top: 2px; text-align: center;">${getPlayerScoreDisplay(game.V_s5)}</div>
+                                                        ${generatePlayerTooltip(game.V_s5)}
                                                     </td>
-                                                    <td class="player-name">
-                                                        <div>${game.H_s1 || ''}</div>
-                                                        <div style="font-size: 9px; color: #48bb78; ${getScoreStyle(game.H_s1)}">${getPlayerScoreDisplay(game.H_s1)}</div>
+                                                    <td class="player-name" style="padding: 4px 8px; ${h1Style.cellStyle}">
+                                                        ${formatPlayerName(game.H_s1)}
+                                                        <div style="font-size: 8px; color: #48bb78; ${h1Style.scoreStyle} margin-top: 2px; text-align: center;">${getPlayerScoreDisplay(game.H_s1)}</div>
+                                                        ${generatePlayerTooltip(game.H_s1)}
                                                     </td>
-                                                    <td class="player-name">
-                                                        <div>${game.H_s2 || ''}</div>
-                                                        <div style="font-size: 9px; color: #48bb78; ${getScoreStyle(game.H_s2)}">${getPlayerScoreDisplay(game.H_s2)}</div>
+                                                    <td class="player-name" style="padding: 4px 8px; ${h2Style.cellStyle}">
+                                                        ${formatPlayerName(game.H_s2)}
+                                                        <div style="font-size: 8px; color: #48bb78; ${h2Style.scoreStyle} margin-top: 2px; text-align: center;">${getPlayerScoreDisplay(game.H_s2)}</div>
+                                                        ${generatePlayerTooltip(game.H_s2)}
                                                     </td>
-                                                    <td class="player-name">
-                                                        <div>${game.H_s3 || ''}</div>
-                                                        <div style="font-size: 9px; color: #48bb78; ${getScoreStyle(game.H_s3)}">${getPlayerScoreDisplay(game.H_s3)}</div>
+                                                    <td class="player-name" style="padding: 4px 8px; ${h3Style.cellStyle}">
+                                                        ${formatPlayerName(game.H_s3)}
+                                                        <div style="font-size: 8px; color: #48bb78; ${h3Style.scoreStyle} margin-top: 2px; text-align: center;">${getPlayerScoreDisplay(game.H_s3)}</div>
+                                                        ${generatePlayerTooltip(game.H_s3)}
                                                     </td>
-                                                    <td class="player-name">
-                                                        <div>${game.H_s4 || ''}</div>
-                                                        <div style="font-size: 9px; color: #48bb78; ${getScoreStyle(game.H_s4)}">${getPlayerScoreDisplay(game.H_s4)}</div>
+                                                    <td class="player-name" style="padding: 4px 8px; ${h4Style.cellStyle}">
+                                                        ${formatPlayerName(game.H_s4)}
+                                                        <div style="font-size: 8px; color: #48bb78; ${h4Style.scoreStyle} margin-top: 2px; text-align: center;">${getPlayerScoreDisplay(game.H_s4)}</div>
+                                                        ${generatePlayerTooltip(game.H_s4)}
                                                     </td>
-                                                    <td class="player-name">
-                                                        <div>${game.H_s5 || ''}</div>
-                                                        <div style="font-size: 9px; color: #48bb78; ${getScoreStyle(game.H_s5)}">${getPlayerScoreDisplay(game.H_s5)}</div>
+                                                    <td class="player-name" style="padding: 4px 8px; ${h5Style.cellStyle}">
+                                                        ${formatPlayerName(game.H_s5)}
+                                                        <div style="font-size: 8px; color: #48bb78; ${h5Style.scoreStyle} margin-top: 2px; text-align: center;">${getPlayerScoreDisplay(game.H_s5)}</div>
+                                                        ${generatePlayerTooltip(game.H_s5)}
+                                                    </td>
+                                                    <td style="padding: 6px; vertical-align: top; background: #f7fafc;">
+                                                        ${topPlayersHTML}
                                                     </td>
                                                 </tr>
                                             `;
@@ -794,6 +1192,25 @@
                 section.style.display = 'none';
                 icon.textContent = '▶';
             }
+        }
+
+        function getPrimaryHighlight(playerHighlights) {
+            // Get the most significant highlight from a list
+            // Priority: first_shot_made > first_shot_missed > first_fg_made > missed_shot > free_throw
+            if (!playerHighlights) return null;
+            
+            const highlightsList = Array.isArray(playerHighlights) ? playerHighlights : [playerHighlights];
+            
+            if (highlightsList.includes('first_shot_made')) return 'first_shot_made';
+            if (highlightsList.includes('first_shot_missed')) return 'first_shot_missed';
+            if (highlightsList.includes('first_fg_made')) return 'first_fg_made';
+            if (highlightsList.includes('missed_shot')) return 'missed_shot';
+            if (highlightsList.includes('free_throw')) return 'free_throw';
+            // Legacy support
+            if (highlightsList.includes('green')) return 'green';
+            if (highlightsList.includes('yellow')) return 'yellow';
+            
+            return null;
         }
 
         function renderAnalysisTable(analysis) {
@@ -846,15 +1263,17 @@
                                 const highlights = game.highlights || {};
                                 
                                 const getHighlight = (playerName) => {
-                                    const highlightType = highlights[playerName];
-                                    if (highlightType === 'first_shot_made') return 'highlight-first-shot-made';
-                                    if (highlightType === 'first_shot_missed') return 'highlight-first-shot-missed';
-                                    if (highlightType === 'first_fg_made') return 'highlight-first-fg-made';
-                                    if (highlightType === 'missed_shot') return 'highlight-missed-shot';
-                                    if (highlightType === 'free_throw') return 'highlight-free-throw';
+                                    const playerHighlights = highlights[playerName];
+                                    const primaryHighlight = getPrimaryHighlight(playerHighlights);
+                                    
+                                    if (primaryHighlight === 'first_shot_made') return 'highlight-first-shot-made';
+                                    if (primaryHighlight === 'first_shot_missed') return 'highlight-first-shot-missed';
+                                    if (primaryHighlight === 'first_fg_made') return 'highlight-first-fg-made';
+                                    if (primaryHighlight === 'missed_shot') return 'highlight-missed-shot';
+                                    if (primaryHighlight === 'free_throw') return 'highlight-free-throw';
                                     // Legacy support
-                                    if (highlightType === 'green') return 'highlight-green';
-                                    if (highlightType === 'yellow') return 'highlight-yellow';
+                                    if (primaryHighlight === 'green') return 'highlight-green';
+                                    if (primaryHighlight === 'yellow') return 'highlight-yellow';
                                     return '';
                                 };
                                 
@@ -862,21 +1281,64 @@
                                 const hStarters = game.home_starters || [];
                                 const gameKey = game.game_key || '';
                                 
+                                // Generate tooltip for each player
+                                const generateTooltip = (playerName) => {
+                                    if (!playerName || playerName === '') return '';
+                                    const stats = playerScoresData[playerName];
+                                    if (!stats) return '';
+                                    
+                                    return `
+                                        <div class="player-tooltip">
+                                            <div style="font-weight: 700; margin-bottom: 8px; font-size: 13px; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 5px;">${playerName}</div>
+                                            <div class="tooltip-row">
+                                                <span class="tooltip-label">Games Started:</span>
+                                                <span class="tooltip-value">${stats.games_started || 0}</span>
+                                            </div>
+                                            <div class="tooltip-row">
+                                                <span class="tooltip-label">Took & Made First Shot:</span>
+                                                <span class="tooltip-value">${stats.first_shot_made || 0}</span>
+                                            </div>
+                                            <div class="tooltip-row">
+                                                <span class="tooltip-label">Took & Missed First Shot:</span>
+                                                <span class="tooltip-value">${stats.first_shot_missed || 0}</span>
+                                            </div>
+                                            <div class="tooltip-row">
+                                                <span class="tooltip-label">Made First FG (wasn't first shot):</span>
+                                                <span class="tooltip-value">${stats.first_fg_made || 0}</span>
+                                            </div>
+                                            <div class="tooltip-row">
+                                                <span class="tooltip-label">Missed Shot Before First FG:</span>
+                                                <span class="tooltip-value">${stats.missed_shot || 0}</span>
+                                            </div>
+                                            <div class="tooltip-row">
+                                                <span class="tooltip-label">Took FTs:</span>
+                                                <span class="tooltip-value">${stats.free_throw || 0}</span>
+                                            </div>
+                                            <div style="margin-top: 8px; padding-top: 8px; border-top: 2px solid rgba(255,255,255,0.2); font-weight: 700;">
+                                                <div class="tooltip-row">
+                                                    <span class="tooltip-label">Total Score:</span>
+                                                    <span class="tooltip-value" style="color: #fbbf24;">${stats.shot_score.toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                };
+                                
                                 return `
                                     <tr class="game-row" data-game-key="${gameKey}" onclick="toggleGamePBP('${gameKey}', ${index})">
                                         <td><span class="expand-icon">▶</span>${gameKey}</td>
                                         <td>${game.date || ''}</td>
                                         <td>${game.matchup || ''}</td>
-                                        <td class="player-name ${getHighlight(vStarters[0])}">${vStarters[0] || ''}</td>
-                                        <td class="player-name ${getHighlight(vStarters[1])}">${vStarters[1] || ''}</td>
-                                        <td class="player-name ${getHighlight(vStarters[2])}">${vStarters[2] || ''}</td>
-                                        <td class="player-name ${getHighlight(vStarters[3])}">${vStarters[3] || ''}</td>
-                                        <td class="player-name ${getHighlight(vStarters[4])}">${vStarters[4] || ''}</td>
-                                        <td class="player-name ${getHighlight(hStarters[0])}">${hStarters[0] || ''}</td>
-                                        <td class="player-name ${getHighlight(hStarters[1])}">${hStarters[1] || ''}</td>
-                                        <td class="player-name ${getHighlight(hStarters[2])}">${hStarters[2] || ''}</td>
-                                        <td class="player-name ${getHighlight(hStarters[3])}">${hStarters[3] || ''}</td>
-                                        <td class="player-name ${getHighlight(hStarters[4])}">${hStarters[4] || ''}</td>
+                                        <td class="player-name ${getHighlight(vStarters[0])}">${vStarters[0] || ''}${generateTooltip(vStarters[0])}</td>
+                                        <td class="player-name ${getHighlight(vStarters[1])}">${vStarters[1] || ''}${generateTooltip(vStarters[1])}</td>
+                                        <td class="player-name ${getHighlight(vStarters[2])}">${vStarters[2] || ''}${generateTooltip(vStarters[2])}</td>
+                                        <td class="player-name ${getHighlight(vStarters[3])}">${vStarters[3] || ''}${generateTooltip(vStarters[3])}</td>
+                                        <td class="player-name ${getHighlight(vStarters[4])}">${vStarters[4] || ''}${generateTooltip(vStarters[4])}</td>
+                                        <td class="player-name ${getHighlight(hStarters[0])}">${hStarters[0] || ''}${generateTooltip(hStarters[0])}</td>
+                                        <td class="player-name ${getHighlight(hStarters[1])}">${hStarters[1] || ''}${generateTooltip(hStarters[1])}</td>
+                                        <td class="player-name ${getHighlight(hStarters[2])}">${hStarters[2] || ''}${generateTooltip(hStarters[2])}</td>
+                                        <td class="player-name ${getHighlight(hStarters[3])}">${hStarters[3] || ''}${generateTooltip(hStarters[3])}</td>
+                                        <td class="player-name ${getHighlight(hStarters[4])}">${hStarters[4] || ''}${generateTooltip(hStarters[4])}</td>
                                         <td>${game.pbp_count || 0}</td>
                                     </tr>
                                     <tr class="pbp-detail-row" id="pbp-detail-${index}">
@@ -902,19 +1364,28 @@
             // Update button styles
             const gameBtn = document.getElementById('viewByGameBtn');
             const teamBtn = document.getElementById('viewByTeamBtn');
+            const playerBtn = document.getElementById('viewByPlayerBtn');
+            
+            // Reset all buttons
+            gameBtn.style.background = 'white';
+            gameBtn.style.color = '#667eea';
+            teamBtn.style.background = 'white';
+            teamBtn.style.color = '#667eea';
+            playerBtn.style.background = 'white';
+            playerBtn.style.color = '#667eea';
             
             if (viewType === 'game') {
                 gameBtn.style.background = '#667eea';
                 gameBtn.style.color = 'white';
-                teamBtn.style.background = 'white';
-                teamBtn.style.color = '#667eea';
                 renderAnalysisTable(analysisData);
-            } else {
-                gameBtn.style.background = 'white';
-                gameBtn.style.color = '#667eea';
+            } else if (viewType === 'team') {
                 teamBtn.style.background = '#667eea';
                 teamBtn.style.color = 'white';
                 renderAnalysisTableByTeam(analysisData);
+            } else if (viewType === 'player') {
+                playerBtn.style.background = '#667eea';
+                playerBtn.style.color = 'white';
+                renderAnalysisTableByPlayer(analysisData);
             }
         }
 
@@ -995,26 +1466,32 @@
                                             }
                                             rosterMap[player].games++;
                                             
-                                            // Check highlights and add score
+                                            // Check highlights and add score (using dynamic metrics)
                                             const highlights = game.highlights || {};
-                                            const highlightType = highlights[player];
-                                            if (highlightType === 'first_shot_made') {
-                                                rosterMap[player].score += 2.0;
-                                            } else if (highlightType === 'first_shot_missed') {
-                                                rosterMap[player].score += 1.0;
-                                            } else if (highlightType === 'first_fg_made') {
-                                                rosterMap[player].score += 0.75;
-                                            } else if (highlightType === 'missed_shot') {
-                                                rosterMap[player].score += 0.5;
-                                            } else if (highlightType === 'free_throw') {
-                                                rosterMap[player].score += 0.25;
-                                            }
-                                            // Legacy support
-                                            else if (highlightType === 'green') {
-                                                rosterMap[player].score += 0.75;
-                                            } else if (highlightType === 'yellow') {
-                                                rosterMap[player].score += 0.5;
-                                            }
+                                            const playerHighlights = highlights[player];
+                                            const highlightsList = Array.isArray(playerHighlights) ? playerHighlights : (playerHighlights ? [playerHighlights] : []);
+                                            const metrics = getScoringMetrics();
+                                            
+                                            // Process ALL highlights for this player in this game
+                                            highlightsList.forEach(highlightType => {
+                                                if (highlightType === 'first_shot_made') {
+                                                    rosterMap[player].score += metrics.first_shot_made;
+                                                } else if (highlightType === 'first_shot_missed') {
+                                                    rosterMap[player].score += metrics.first_shot_missed;
+                                                } else if (highlightType === 'first_fg_made') {
+                                                    rosterMap[player].score += metrics.first_fg_made;
+                                                } else if (highlightType === 'missed_shot') {
+                                                    rosterMap[player].score += metrics.missed_shot;
+                                                } else if (highlightType === 'free_throw') {
+                                                    rosterMap[player].score += metrics.free_throw;
+                                                }
+                                                // Legacy support
+                                                else if (highlightType === 'green') {
+                                                    rosterMap[player].score += metrics.first_fg_made;
+                                                } else if (highlightType === 'yellow') {
+                                                    rosterMap[player].score += metrics.missed_shot;
+                                                }
+                                            });
                                         }
                                     });
                                 });
@@ -1153,16 +1630,58 @@
                                                 const highlights = game.highlights || {};
                                                 
                                                 const getHighlight = (playerName) => {
-                                                    const highlightType = highlights[playerName];
-                                                    if (highlightType === 'first_shot_made') return 'highlight-first-shot-made';
-                                                    if (highlightType === 'first_shot_missed') return 'highlight-first-shot-missed';
-                                                    if (highlightType === 'first_fg_made') return 'highlight-first-fg-made';
-                                                    if (highlightType === 'missed_shot') return 'highlight-missed-shot';
-                                                    if (highlightType === 'free_throw') return 'highlight-free-throw';
+                                                    const playerHighlights = highlights[playerName];
+                                                    const primaryHighlight = getPrimaryHighlight(playerHighlights);
+                                                    
+                                                    if (primaryHighlight === 'first_shot_made') return 'highlight-first-shot-made';
+                                                    if (primaryHighlight === 'first_shot_missed') return 'highlight-first-shot-missed';
+                                                    if (primaryHighlight === 'first_fg_made') return 'highlight-first-fg-made';
+                                                    if (primaryHighlight === 'missed_shot') return 'highlight-missed-shot';
+                                                    if (primaryHighlight === 'free_throw') return 'highlight-free-throw';
                                                     // Legacy support
-                                                    if (highlightType === 'green') return 'highlight-green';
-                                                    if (highlightType === 'yellow') return 'highlight-yellow';
+                                                    if (primaryHighlight === 'green') return 'highlight-green';
+                                                    if (primaryHighlight === 'yellow') return 'highlight-yellow';
                                                     return '';
+                                                };
+                                                
+                                                const generateTooltipHtml = (playerName) => {
+                                                    if (!playerName || playerName === '') return '';
+                                                    const stats = playerScoresData[playerName];
+                                                    if (!stats) return '';
+                                                    
+                                                    return `<div class="player-tooltip">
+                                                        <div style="font-weight: 700; margin-bottom: 8px; font-size: 13px; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 5px;">${playerName}</div>
+                                                        <div class="tooltip-row">
+                                                            <span class="tooltip-label">Games Started:</span>
+                                                            <span class="tooltip-value">${stats.games_started || 0}</span>
+                                                        </div>
+                                                        <div class="tooltip-row">
+                                                            <span class="tooltip-label">Took & Made First Shot:</span>
+                                                            <span class="tooltip-value">${stats.first_shot_made || 0}</span>
+                                                        </div>
+                                                        <div class="tooltip-row">
+                                                            <span class="tooltip-label">Took & Missed First Shot:</span>
+                                                            <span class="tooltip-value">${stats.first_shot_missed || 0}</span>
+                                                        </div>
+                                                        <div class="tooltip-row">
+                                                            <span class="tooltip-label">Made First FG (wasn't first shot):</span>
+                                                            <span class="tooltip-value">${stats.first_fg_made || 0}</span>
+                                                        </div>
+                                                        <div class="tooltip-row">
+                                                            <span class="tooltip-label">Missed Shot Before First FG:</span>
+                                                            <span class="tooltip-value">${stats.missed_shot || 0}</span>
+                                                        </div>
+                                                        <div class="tooltip-row">
+                                                            <span class="tooltip-label">Took FTs:</span>
+                                                            <span class="tooltip-value">${stats.free_throw || 0}</span>
+                                                        </div>
+                                                        <div style="margin-top: 8px; padding-top: 8px; border-top: 2px solid rgba(255,255,255,0.2); font-weight: 700;">
+                                                            <div class="tooltip-row">
+                                                                <span class="tooltip-label">Total Score:</span>
+                                                                <span class="tooltip-value" style="color: #fbbf24;">${stats.shot_score.toFixed(2)}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>`;
                                                 };
                                                 
                                                 // Place each player in their assigned column
@@ -1181,7 +1700,7 @@
                                                         <td style="white-space: nowrap;">${game.date}</td>
                                                         <td style="white-space: nowrap;">${homeAway} ${opponent}</td>
                                                         ${displayStarters.map(player => 
-                                                            `<td class="player-name ${getHighlight(player || '')}">${player || ''}</td>`
+                                                            `<td class="player-name ${getHighlight(player || '')}">${player || ''}${generateTooltipHtml(player)}</td>`
                                                         ).join('')}
                                                     </tr>
                                                 `;
@@ -1206,6 +1725,178 @@
             analysisContent.innerHTML = html;
         }
         
+        function renderAnalysisTableByPlayer(analysis) {
+            const analysisContent = document.getElementById('analysisContent');
+            
+            // Get teams to filter by (if a game is selected)
+            let filterTeams = null;
+            if (selectedGameKey) {
+                // Extract teams from the selected game key (format: VIS@HOM_DATE)
+                const matchupPart = selectedGameKey.split('_')[0]; // e.g., "OKC@DAL"
+                if (matchupPart) {
+                    const teams = matchupPart.split('@'); // ["OKC", "DAL"]
+                    if (teams.length === 2) {
+                        filterTeams = new Set(teams);
+                    }
+                }
+            }
+            
+            // Filter analysis if needed
+            const displayAnalysis = filterTeams 
+                ? analysis.filter(game => {
+                    return filterTeams.has(game.visitor_team) || filterTeams.has(game.home_team);
+                })
+                : analysis;
+            
+            // Aggregate player data across all games
+            const playerData = {};
+            const metrics = getScoringMetrics();
+            
+            displayAnalysis.forEach(game => {
+                const highlights = game.highlights || {};
+                const allStarters = [
+                    ...(game.visitor_starters || []).map(p => ({ name: p, team: game.visitor_team })),
+                    ...(game.home_starters || []).map(p => ({ name: p, team: game.home_team }))
+                ];
+                
+                allStarters.forEach(playerInfo => {
+                    const player = playerInfo.name;
+                    if (!player || player === '') return;
+                    
+                    if (!playerData[player]) {
+                        playerData[player] = {
+                            name: player,
+                            team: playerInfo.team,
+                            games_started: 0,
+                            total_score: 0,
+                            first_shot_made: 0,
+                            first_shot_missed: 0,
+                            first_fg_made: 0,
+                            missed_shot: 0,
+                            free_throw: 0
+                        };
+                    }
+                    
+                    playerData[player].games_started++;
+                    
+                    // Handle both old format (single string) and new format (array of strings)
+                    const playerHighlights = highlights[player];
+                    const highlightsList = Array.isArray(playerHighlights) ? playerHighlights : (playerHighlights ? [playerHighlights] : []);
+                    
+                    // Process ALL highlights for this player in this game
+                    highlightsList.forEach(highlightType => {
+                        if (highlightType === 'first_shot_made') {
+                            playerData[player].total_score += metrics.first_shot_made;
+                            playerData[player].first_shot_made++;
+                        } else if (highlightType === 'first_shot_missed') {
+                            playerData[player].total_score += metrics.first_shot_missed;
+                            playerData[player].first_shot_missed++;
+                        } else if (highlightType === 'first_fg_made') {
+                            playerData[player].total_score += metrics.first_fg_made;
+                            playerData[player].first_fg_made++;
+                        } else if (highlightType === 'missed_shot') {
+                            playerData[player].total_score += metrics.missed_shot;
+                            playerData[player].missed_shot++;
+                        } else if (highlightType === 'free_throw') {
+                            playerData[player].total_score += metrics.free_throw;
+                            playerData[player].free_throw++;
+                        }
+                        // Legacy support
+                        else if (highlightType === 'green') {
+                            playerData[player].total_score += metrics.first_fg_made;
+                            playerData[player].first_fg_made++;
+                        } else if (highlightType === 'yellow') {
+                            playerData[player].total_score += metrics.missed_shot;
+                            playerData[player].missed_shot++;
+                        }
+                    });
+                });
+            });
+            
+            // Sort players by total score (descending)
+            const sortedPlayers = Object.values(playerData).sort((a, b) => {
+                if (b.total_score !== a.total_score) {
+                    return b.total_score - a.total_score;
+                }
+                return b.games_started - a.games_started;
+            });
+            
+            const html = `
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Player Name</th>
+                                <th>Team</th>
+                                <th>Games Started</th>
+                                <th>Total Score</th>
+                                <th>Avg Score</th>
+                                <th title="Took & Made First Shot">First Shot Made</th>
+                                <th title="Took & Missed First Shot">First Shot Missed</th>
+                                <th title="Made First FG (but wasn't first shot)">First FG Made</th>
+                                <th title="Missed a Shot Before First FG">Missed Shot</th>
+                                <th title="Took Free Throws Before First FG">Free Throws</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sortedPlayers.map((player, index) => {
+                                const avgScore = player.games_started > 0 ? (player.total_score / player.games_started) : 0;
+                                const isZeroScore = player.total_score === 0;
+                                
+                                // Calculate gradient color based on average score (0 to 2)
+                                let bgColor = '#9ca3af'; // Default grey for zero
+                                if (!isZeroScore) {
+                                    if (avgScore <= 1.0) {
+                                        // Yellow to light green (0 to 1)
+                                        const intensity = avgScore; // 0 to 1
+                                        const r = Math.round(236 - (intensity * 164)); // 236 to 72
+                                        const g = Math.round(201 - (intensity * 14)); // 201 to 187
+                                        const b = Math.round(75 + (intensity * 45)); // 75 to 120
+                                        bgColor = `rgb(${r}, ${g}, ${b})`;
+                                    } else {
+                                        // Light green to bright green (1 to 2)
+                                        const intensity = (avgScore - 1.0); // 0 to 1
+                                        const r = Math.round(72 - (intensity * 6)); // 72 to 66
+                                        const g = Math.round(187 + (intensity * 10)); // 187 to 197
+                                        const b = Math.round(120 - (intensity * 26)); // 120 to 94
+                                        bgColor = `rgb(${r}, ${g}, ${b})`;
+                                    }
+                                }
+                                
+                                const textColor = isZeroScore ? '#6b7280' : (avgScore > 0.75 ? 'white' : '#2d3748');
+                                const fontStyle = isZeroScore ? 'opacity: 0.5;' : '';
+                                
+                                return `
+                                    <tr style="${fontStyle}">
+                                        <td style="text-align: center; font-weight: 600; color: #667eea;">${index + 1}</td>
+                                        <td class="player-name" style="font-weight: 600;">${player.name}</td>
+                                        <td style="text-align: center; font-weight: 600; color: #764ba2;">${player.team || ''}</td>
+                                        <td style="text-align: center;">${player.games_started}</td>
+                                        <td style="text-align: center;">
+                                            <span style="padding: 4px 12px; border-radius: 4px; font-weight: 600; background: ${bgColor}; color: ${textColor}; font-size: 13px;">
+                                                ${player.total_score.toFixed(2)}
+                                            </span>
+                                        </td>
+                                        <td style="text-align: center; font-weight: 600; color: ${isZeroScore ? '#9ca3af' : '#4b5563'};">
+                                            ${avgScore.toFixed(2)}
+                                        </td>
+                                        <td style="text-align: center;">${player.first_shot_made}</td>
+                                        <td style="text-align: center;">${player.first_shot_missed}</td>
+                                        <td style="text-align: center;">${player.first_fg_made}</td>
+                                        <td style="text-align: center;">${player.missed_shot}</td>
+                                        <td style="text-align: center;">${player.free_throw}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            analysisContent.innerHTML = html;
+        }
+        
         function toggleTeamDetails(teamId) {
             const details = document.getElementById(`${teamId}_details`);
             const arrow = document.getElementById(`${teamId}_arrow`);
@@ -1219,6 +1910,29 @@
             }
         }
 
+        // Add event delegation for tooltip positioning
+        document.addEventListener('mouseover', (e) => {
+            const playerCell = e.target.closest('.player-name');
+            if (playerCell) {
+                const tooltip = playerCell.querySelector('.player-tooltip');
+                if (tooltip) {
+                    playerCell.classList.add('show-tooltip');
+                    
+                    // Position tooltip near cursor
+                    const rect = playerCell.getBoundingClientRect();
+                    tooltip.style.left = (rect.left + rect.width / 2 - 110) + 'px'; // Center horizontally
+                    tooltip.style.top = (rect.bottom + 5) + 'px'; // Below the cell
+                }
+            }
+        });
+        
+        document.addEventListener('mouseout', (e) => {
+            const playerCell = e.target.closest('.player-name');
+            if (playerCell && !playerCell.contains(e.relatedTarget)) {
+                playerCell.classList.remove('show-tooltip');
+            }
+        });
+        
         window.addEventListener('load', () => {
             refreshAnalysis();
         });

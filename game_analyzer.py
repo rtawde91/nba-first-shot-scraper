@@ -101,7 +101,7 @@ def analyze_game_first_shots(game_key: str, starters: List[str], pbp_plays: List
         pbp_plays: List of play-by-play dictionaries for this game
         
     Returns:
-        Dict with player highlights: {player_name: highlight_type}
+        Dict with player highlights: {player_name: [list of highlight_types]}
         Highlight types:
         - 'first_shot_made': Took and made the very first shot in the game
         - 'first_shot_missed': Took and missed the very first shot in the game
@@ -138,32 +138,34 @@ def analyze_game_first_shots(game_key: str, starters: List[str], pbp_plays: List
                                                                                   'dunk' in play_lower or '3-pt' in play_lower or '2-pt' in play_lower)
         is_free_throw = 'free throw' in play_lower
         
+        # Initialize player's highlights list if not exists
+        if matched_player not in highlights:
+            highlights[matched_player] = []
+        
         # First shot of the game
         if not first_shot_taken and (is_made_fg or is_missed_fg):
             first_shot_taken = True
             if is_made_fg:
-                highlights[matched_player] = 'first_shot_made'
+                highlights[matched_player].append('first_shot_made')
                 first_fg_made = True
                 break  # Game analysis done
             elif is_missed_fg:
-                highlights[matched_player] = 'first_shot_missed'
+                highlights[matched_player].append('first_shot_missed')
             continue
         
         # After first shot but before first FG
         if first_shot_taken and not first_fg_made:
             if is_made_fg:
                 # This is the first made FG, but not the first shot
-                highlights[matched_player] = 'first_fg_made'
+                highlights[matched_player].append('first_fg_made')
                 first_fg_made = True
                 break  # Game analysis done
             elif is_missed_fg:
                 # Another missed shot
-                if matched_player not in highlights:
-                    highlights[matched_player] = 'missed_shot'
+                highlights[matched_player].append('missed_shot')
             elif is_free_throw:
                 # Free throw taken before first FG
-                if matched_player not in highlights:
-                    highlights[matched_player] = 'free_throw'
+                highlights[matched_player].append('free_throw')
     
     return highlights
 

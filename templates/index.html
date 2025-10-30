@@ -573,7 +573,13 @@
 
         <!-- DATA PREVIEW -->
         <div class="data-preview-card">
-            <h2 style="margin-bottom: 15px;">📊 Data Preview</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin: 0;">📊 Data Preview</h2>
+                <button onclick="updatePreview(true)" 
+                        style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.3s;">
+                    🔄 Refresh from CSV
+                </button>
+            </div>
 
             <div class="preview-tabs">
                 <button class="tab active" onclick="switchTab(event, 'games')">
@@ -699,9 +705,10 @@
             }
         }
 
-        async function updatePreview() {
+        async function updatePreview(fromCSV = false) {
             try {
-                const response = await fetch('/api/preview');
+                const url = fromCSV ? '/api/preview?from_csv=true' : '/api/preview';
+                const response = await fetch(url);
                 const preview = await response.json();
                 
                 document.getElementById('gamesCount').textContent = preview.games_count;
@@ -815,20 +822,20 @@
             document.getElementById('playsPreview').style.display = tab === 'plays' ? 'block' : 'none';
         }
 
-        // Initial update
+        // Initial update - load from CSV to show previously scraped data
         updateStatus();
-        updatePreview();
+        updatePreview(true); // Load from CSV on first load
         
         // Auto-refresh every 30 seconds
         setInterval(() => {
             updateStatus();
-            updatePreview();
+            updatePreview(); // Load live data during scraping
         }, 30000);
         
         // Fast refresh while scraping
         setInterval(() => {
             updateStatus();
-            updatePreview();
+            updatePreview(); // Load live data during scraping
         }, 2000);
     </script>
 </body>

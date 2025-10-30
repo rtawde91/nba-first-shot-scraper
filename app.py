@@ -158,9 +158,30 @@ def get_preview():
         try:
             games_data, pbp_data = load_data_from_csv()
             
-            # Return ALL PBP data for filtering by game_key
+            # Create games preview (limit to last 50)
+            games_preview = []
+            for game in games_data[-50:]:
+                games_preview.append({
+                    'game_key': game.get('game_key', ''),
+                    'date': game.get('date', ''),
+                    'matchup': game.get('matchup', ''),
+                    'visitor_team': game.get('visitor_team', ''),
+                    'home_team': game.get('home_team', ''),
+                    'V_s1': game.get('V_s1', ''),
+                    'V_s2': game.get('V_s2', ''),
+                    'V_s3': game.get('V_s3', ''),
+                    'V_s4': game.get('V_s4', ''),
+                    'V_s5': game.get('V_s5', ''),
+                    'H_s1': game.get('H_s1', ''),
+                    'H_s2': game.get('H_s2', ''),
+                    'H_s3': game.get('H_s3', ''),
+                    'H_s4': game.get('H_s4', ''),
+                    'H_s5': game.get('H_s5', '')
+                })
+            
+            # Create PBP preview (limit to last 100)
             pbp_preview = []
-            for play in pbp_data:
+            for play in pbp_data[-100:]:
                 pbp_preview.append({
                     'game_key': play.get('game_key', ''),
                     'date': play.get('date', ''),
@@ -176,7 +197,7 @@ def get_preview():
             return jsonify({
                 'games_count': len(games_data),
                 'plays_count': len(pbp_data),
-                'games_preview': [],
+                'games_preview': games_preview,
                 'pbp_preview': pbp_preview
             })
         except Exception as e:
