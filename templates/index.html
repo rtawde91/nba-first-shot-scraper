@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basketball Reference Scraper - 4 Phase System + Full Cycle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease-in;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-content {
+            flex: 1;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            padding: 12px 24px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .phases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .phase-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: slideUp 0.5s ease-out;
+        }
+
+        .phase-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .phase-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .phase-number {
+            background: #667eea;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            font-size: 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+        }
+
+        .status-idle {
+            background: #cbd5e0;
+            color: #2d3748;
+        }
+
+        .status-running {
+            background: #48bb78;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        .status-completed {
+            background: #4299e1;
+            color: white;
+        }
+
+        .status-error {
+            background: #f56565;
+            color: white;
+        }
+
+        .progress-bar-container {
+            background: #e2e8f0;
+            border-radius: 8px;
+            height: 24px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #38a169);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .stat-item {
+            background: #f7fafc;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #718096;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .current-task {
+            background: #f7fafc;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #4a5568;
+            margin-top: 10px;
+            min-height: 45px;
+        }
+
+        .data-preview-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .preview-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: #e2e8f0;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .preview-content {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .data-table th {
+            background: #667eea;
+            color: white;
+            padding: 8px 6px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        .data-table td {
+            padding: 6px 6px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 10px;
+            white-space: nowrap;
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-table tr:hover {
+            background: #f7fafc;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+
+        .highlight-green {
+            background-color: #48bb78 !important;
+            color: white !important;
+            font-weight: 600;
+        }
+
+        .highlight-yellow {
+            background-color: #ecc94b !important;
+            color: #2d3748 !important;
+            font-weight: 600;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .info-box {
+            background: rgba(255, 255, 255, 0.9);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            color: #4a5568;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>🏀 Basketball Reference Scraper</h1>
+                <p>4-Phase Scraping System + Full Cycle - 2025-26 Season</p>
+            </div>
+            <div class="header-nav">
+                <a href="/analysis" class="nav-btn">
+                    🎯 First Shot Analysis ➜
+                </a>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>📋 How It Works</h3>
+            <p><strong>Phase 1:</strong> Fetches the game schedule → <strong>Phase 2:</strong> Gets rosters & injuries → <strong>Phase 3:</strong> Collects play-by-play until first FG → <strong>Phase 4:</strong> Gets upcoming games (today/tomorrow)</p>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button class="btn btn-primary" onclick="startFullCycle()" style="font-size: 18px; padding: 15px 40px; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);">
+                ⚡ Run Full Cycle (All 4 Phases)
+            </button>
+        </div>
+
+        <div class="phases-grid">
+            <!-- PHASE 1: SCHEDULE -->
+            <div class="phase-card">
+                <div class="phase-header">
+                    <h2 class="phase-title">📅 Schedule</h2>
+                    <div class="phase-number">1</div>
+                </div>
+
+                <button id="scheduleBtn" class="btn btn-primary" onclick="startPhase('schedule')">
+                    🚀 Start Phase 1
+                </button>
+
+                <span id="scheduleBadge" class="status-badge status-idle">IDLE</span>
+
+                <div class="progress-bar-container">
+                    <div id="scheduleProgress" class="progress-bar" style="width: 0%">0%</div>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-label">Completed</div>
+                        <div class="stat-value"><span id="scheduleCompleted">0</span>/<span id="scheduleTotal">0</span></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Games Found</div>
+                        <div class="stat-value" id="gamesFound">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Elapsed</div>
+                        <div class="stat-value" id="scheduleElapsed">00:00</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">ETA</div>
+                        <div class="stat-value" id="scheduleETA">--:--</div>
+                    </div>
+                </div>
+
+                <div class="current-task">
+                    <strong>Task:</strong> <span id="scheduleTask">Ready to start...</span>
+                </div>
+                <div class="current-task" style="margin-top: 5px; font-size: 12px; color: #718096;">
+                    <strong>Last Updated:</strong> <span id="scheduleLastUpdated">Never</span>
+                </div>
+            </div>
+
+            <!-- PHASE 2: ROSTERS -->
+            <div class="phase-card">
+                <div class="phase-header">
+                    <h2 class="phase-title">👥 Rosters</h2>
+                    <div class="phase-number">2</div>
+                </div>
+
+                <button id="rosterBtn" class="btn btn-primary" onclick="startPhase('roster')" disabled>
+                    🚀 Start Phase 2
+                </button>
+
+                <span id="rosterBadge" class="status-badge status-idle">IDLE</span>
+
+                <div class="progress-bar-container">
+                    <div id="rosterProgress" class="progress-bar" style="width: 0%">0%</div>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-label">Completed</div>
+                        <div class="stat-value"><span id="rosterCompleted">0</span>/<span id="rosterTotal">0</span></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Rosters Collected</div>
+                        <div class="stat-value" id="rostersCollected">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Elapsed</div>
+                        <div class="stat-value" id="rosterElapsed">00:00</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">ETA</div>
+                        <div class="stat-value" id="rosterETA">--:--</div>
+                    </div>
+                </div>
+
+                <div class="current-task">
+                    <strong>Task:</strong> <span id="rosterTask">Waiting for Phase 1...</span>
+                </div>
+                <div class="current-task" style="margin-top: 5px; font-size: 12px; color: #718096;">
+                    <strong>Last Updated:</strong> <span id="rosterLastUpdated">Never</span>
+                </div>
+            </div>
+
+            <!-- PHASE 3: PLAY-BY-PLAY -->
+            <div class="phase-card">
+                <div class="phase-header">
+                    <h2 class="phase-title">🏀 Play-by-Play</h2>
+                    <div class="phase-number">3</div>
+                </div>
+
+                <button id="pbpBtn" class="btn btn-primary" onclick="startPhase('pbp')" disabled>
+                    🚀 Start Phase 3
+                </button>
+
+                <span id="pbpBadge" class="status-badge status-idle">IDLE</span>
+
+                <div class="progress-bar-container">
+                    <div id="pbpProgress" class="progress-bar" style="width: 0%">0%</div>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-label">Completed</div>
+                        <div class="stat-value"><span id="pbpCompleted">0</span>/<span id="pbpTotal">0</span></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Plays Collected</div>
+                        <div class="stat-value" id="playsCollected">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Elapsed</div>
+                        <div class="stat-value" id="pbpElapsed">00:00</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">ETA</div>
+                        <div class="stat-value" id="pbpETA">--:--</div>
+                    </div>
+                </div>
+
+                <div class="current-task">
+                    <strong>Task:</strong> <span id="pbpTask">Waiting for Phase 1...</span>
+                </div>
+                <div class="current-task" style="margin-top: 5px; font-size: 12px; color: #718096;">
+                    <strong>Last Updated:</strong> <span id="pbpLastUpdated">Never</span>
+                </div>
+            </div>
+
+            <!-- PHASE 4: UPCOMING GAMES -->
+            <div class="phase-card">
+                <div class="phase-header">
+                    <h2 class="phase-title">🔮 Upcoming Games</h2>
+                    <div class="phase-number">4</div>
+                </div>
+
+                <button id="upcomingBtn" class="btn btn-primary" onclick="startPhase('upcoming')">
+                    🚀 Start Phase 4
+                </button>
+
+                <span id="upcomingBadge" class="status-badge status-idle">IDLE</span>
+
+                <div class="progress-bar-container">
+                    <div id="upcomingProgress" class="progress-bar" style="width: 0%">0%</div>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-label">Completed</div>
+                        <div class="stat-value"><span id="upcomingCompleted">0</span>/<span id="upcomingTotal">0</span></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Games Found</div>
+                        <div class="stat-value" id="upcomingGamesFound">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Elapsed</div>
+                        <div class="stat-value" id="upcomingElapsed">00:00</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">ETA</div>
+                        <div class="stat-value" id="upcomingETA">--:--</div>
+                    </div>
+                </div>
+
+                <div class="current-task">
+                    <strong>Task:</strong> <span id="upcomingTask">Ready to start</span>
+                </div>
+                <div class="current-task" style="margin-top: 5px; font-size: 12px; color: #718096;">
+                    <strong>Last Updated:</strong> <span id="upcomingLastUpdated">Never</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- DATA PREVIEW -->
+        <div class="data-preview-card">
+            <h2 style="margin-bottom: 15px;">📊 Data Preview</h2>
+
+            <div class="preview-tabs">
+                <button class="tab active" onclick="switchTab(event, 'games')">
+                    Games & Rosters (<span id="gamesCount">0</span>)
+                </button>
+                <button class="tab" onclick="switchTab(event, 'plays')">
+                    Play-by-Play (<span id="playsCount">0</span>)
+                </button>
+            </div>
+
+            <div id="gamesPreview" class="preview-content">
+                <div class="empty-state">No data yet. Start Phase 1 to begin!</div>
+            </div>
+
+            <div id="playsPreview" class="preview-content" style="display: none;">
+                <div class="empty-state">No data yet. Start Phase 3 to collect play-by-play data!</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 'games';
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        async function startPhase(phase) {
+            const btn = document.getElementById(phase + 'Btn');
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch(`/api/start/${phase}`, { method: 'POST' });
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    alert(data.error || 'Failed to start phase');
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+                btn.disabled = false;
+            }
+        }
+
+        async function startFullCycle() {
+            if (!confirm('This will run all 4 phases sequentially. Continue?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/start/full_cycle', { method: 'POST' });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('Full cycle started! All 4 phases will run automatically.');
+                } else {
+                    alert(data.error || 'Failed to start full cycle');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function updateStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const status = await response.json();
+                
+                // Update Schedule (Phase 1)
+                updatePhaseUI('schedule', status.schedule);
+                document.getElementById('gamesFound').textContent = status.games_found;
+                document.getElementById('scheduleLastUpdated').textContent = status.schedule_last_updated || 'Never';
+                
+                // Update Roster (Phase 2)
+                updatePhaseUI('roster', status.roster);
+                document.getElementById('rosterLastUpdated').textContent = status.roster_last_updated || 'Never';
+                
+                // Update PBP (Phase 3)
+                updatePhaseUI('pbp', status.pbp);
+                document.getElementById('pbpLastUpdated').textContent = status.pbp_last_updated || 'Never';
+                
+                // Update Upcoming (Phase 4)
+                updatePhaseUI('upcoming', status.upcoming);
+                document.getElementById('upcomingLastUpdated').textContent = status.upcoming_last_updated || 'Never';
+                
+                // Enable buttons based on phase completion
+                if (status.schedule.status === 'completed' && status.games_found > 0) {
+                    document.getElementById('rosterBtn').disabled = false;
+                    document.getElementById('pbpBtn').disabled = false;
+                }
+                
+            } catch (error) {
+                console.error('Error updating status:', error);
+            }
+        }
+
+        function updatePhaseUI(phase, data) {
+            // Update badge
+            const badge = document.getElementById(phase + 'Badge');
+            badge.textContent = data.status.toUpperCase();
+            badge.className = 'status-badge status-' + data.status;
+            
+            // Update progress bar
+            const progressBar = document.getElementById(phase + 'Progress');
+            progressBar.style.width = data.progress_percent + '%';
+            progressBar.textContent = data.progress_percent.toFixed(1) + '%';
+            
+            // Update stats
+            document.getElementById(phase + 'Completed').textContent = data.completed;
+            document.getElementById(phase + 'Total').textContent = data.total;
+            document.getElementById(phase + 'Elapsed').textContent = formatTime(data.elapsed_seconds);
+            document.getElementById(phase + 'ETA').textContent = data.eta_seconds > 0 ? formatTime(data.eta_seconds) : '--:--';
+            
+            // Update task
+            document.getElementById(phase + 'Task').textContent = data.task || 'Ready...';
+            
+            // Re-enable button if completed or error
+            if (data.status === 'completed' || data.status === 'error') {
+                document.getElementById(phase + 'Btn').disabled = false;
+            }
+        }
+
+        async function updatePreview() {
+            try {
+                const response = await fetch('/api/preview');
+                const preview = await response.json();
+                
+                document.getElementById('gamesCount').textContent = preview.games_count;
+                document.getElementById('playsCount').textContent = preview.plays_count;
+                document.getElementById('rostersCollected').textContent = preview.games_count;
+                document.getElementById('playsCollected').textContent = preview.plays_count;
+                
+                // Update games preview
+                const gamesPreview = document.getElementById('gamesPreview');
+                if (preview.games_preview && preview.games_preview.length > 0) {
+                    gamesPreview.innerHTML = `
+                        <div style="overflow-x: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Game Key</th>
+                                        <th>Date</th>
+                                        <th>Matchup</th>
+                                        <th>Visitor</th>
+                                        <th>Home</th>
+                                        <th>V_s1</th>
+                                        <th>V_s2</th>
+                                        <th>V_s3</th>
+                                        <th>V_s4</th>
+                                        <th>V_s5</th>
+                                        <th>H_s1</th>
+                                        <th>H_s2</th>
+                                        <th>H_s3</th>
+                                        <th>H_s4</th>
+                                        <th>H_s5</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${preview.games_preview.map(game => `
+                                        <tr>
+                                            <td>${game.game_key || ''}</td>
+                                            <td>${game.date || ''}</td>
+                                            <td>${game.matchup || ''}</td>
+                                            <td>${game.visitor_team || ''}</td>
+                                            <td>${game.home_team || ''}</td>
+                                            <td>${game.V_s1 || ''}</td>
+                                            <td>${game.V_s2 || ''}</td>
+                                            <td>${game.V_s3 || ''}</td>
+                                            <td>${game.V_s4 || ''}</td>
+                                            <td>${game.V_s5 || ''}</td>
+                                            <td>${game.H_s1 || ''}</td>
+                                            <td>${game.H_s2 || ''}</td>
+                                            <td>${game.H_s3 || ''}</td>
+                                            <td>${game.H_s4 || ''}</td>
+                                            <td>${game.H_s5 || ''}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+                
+                // Update plays preview
+                const playsPreview = document.getElementById('playsPreview');
+                if (preview.pbp_preview && preview.pbp_preview.length > 0) {
+                    playsPreview.innerHTML = `
+                        <div style="overflow-x: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Game Key</th>
+                                        <th>Date</th>
+                                        <th>Matchup</th>
+                                        <th>Visitor</th>
+                                        <th>Home</th>
+                                        <th>Time</th>
+                                        <th>Visitor Play</th>
+                                        <th>Home Play</th>
+                                        <th>Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${preview.pbp_preview.map(play => `
+                                        <tr>
+                                            <td>${play.game_key || ''}</td>
+                                            <td>${play.date || ''}</td>
+                                            <td>${play.matchup || ''}</td>
+                                            <td>${play.visitor_team || ''}</td>
+                                            <td>${play.home_team || ''}</td>
+                                            <td>${play.time || ''}</td>
+                                            <td>${play.visitor_play || ''}</td>
+                                            <td>${play.home_play || ''}</td>
+                                            <td>${play.score || ''}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('Error updating preview:', error);
+            }
+        }
+
+        function switchTab(event, tab) {
+            currentTab = tab;
+            
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById('gamesPreview').style.display = tab === 'games' ? 'block' : 'none';
+            document.getElementById('playsPreview').style.display = tab === 'plays' ? 'block' : 'none';
+        }
+
+        // Initial update
+        updateStatus();
+        updatePreview();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            updateStatus();
+            updatePreview();
+        }, 30000);
+        
+        // Fast refresh while scraping
+        setInterval(() => {
+            updateStatus();
+            updatePreview();
+        }, 2000);
+    </script>
+</body>
+</html>
+
