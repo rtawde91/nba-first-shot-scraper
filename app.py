@@ -327,14 +327,26 @@ def calculate_player_scores(analysis):
     - first_shot_missed: +1.0 (took and missed the first shot of the game)
     - first_fg_made: +0.75 (made first FG but wasn't the first shot)
     - missed_shot: +0.5 (missed a shot before first FG, but wasn't the first shot)
-    - free_throw: +0.25 (took free throws before first FG)
+    - free_throw: +0.25 (took free throws before first FG - counts once per game)
     """
     player_scores = {}
+    
+    # Score values for each action type
+    score_values = {
+        'first_shot_made': 2.0,
+        'first_shot_missed': 1.0,
+        'first_fg_made': 0.75,
+        'missed_shot': 0.5,
+        'free_throw': 0.25
+    }
     
     for game in analysis:
         highlights = game.get('highlights', {})
         visitor_starters = game.get('visitor_starters', [])
         home_starters = game.get('home_starters', [])
+        game_key = game.get('game_key', '')
+        game_date = game.get('date', '')
+        game_matchup = game.get('matchup', '')
         
         all_starters = visitor_starters + home_starters
         
@@ -345,24 +357,50 @@ def calculate_player_scores(analysis):
             if player not in player_scores:
                 player_scores[player] = {
                     'shot_score': 0.0,
-                    'games_started': 0
+                    'games_started': 0,
+                    'game_details': []  # Track individual game contributions
                 }
             
             player_scores[player]['games_started'] += 1
             
-            # Check highlight status and apply new scoring
+            # Get the list of highlight actions for this player in this game
+            game_score = 0.0
+            actions = []
+            
             if player in highlights:
-                highlight_type = highlights[player]
-                if highlight_type == 'first_shot_made':
-                    player_scores[player]['shot_score'] += 2.0
-                elif highlight_type == 'first_shot_missed':
-                    player_scores[player]['shot_score'] += 1.0
-                elif highlight_type == 'first_fg_made':
-                    player_scores[player]['shot_score'] += 0.75
-                elif highlight_type == 'missed_shot':
-                    player_scores[player]['shot_score'] += 0.5
-                elif highlight_type == 'free_throw':
-                    player_scores[player]['shot_score'] += 0.25
+                highlight_list = highlights[player]  # This is a list of actions
+                
+                # Deduplicate free throws - only count once per game
+                unique_highlights = []
+                has_free_throw = False
+                for hl in highlight_list:
+                    if hl == 'free_throw':
+                        if not has_free_throw:
+                            unique_highlights.append(hl)
+                            has_free_throw = True
+                    else:
+                        unique_highlights.append(hl)
+                
+                # Calculate score for each unique action
+                for highlight_type in unique_highlights:
+                    if highlight_type in score_values:
+                        action_score = score_values[highlight_type]
+                        game_score += action_score
+                        actions.append({
+                            'type': highlight_type,
+                            'score': action_score
+                        })
+                
+                player_scores[player]['shot_score'] += game_score
+            
+            # Record game details for this player
+            player_scores[player]['game_details'].append({
+                'game_key': game_key,
+                'date': game_date,
+                'matchup': game_matchup,
+                'actions': actions,
+                'game_score': game_score
+            })
     
     return player_scores
 

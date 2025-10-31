@@ -1726,80 +1726,63 @@
                 }
             }
             
-            // Filter analysis if needed
-            const displayAnalysis = filterTeams 
-                ? analysis.filter(game => {
-                    return filterTeams.has(game.visitor_team) || filterTeams.has(game.home_team);
-                })
-                : analysis;
+            // Use playerScoresData from backend which includes game_details
+            // If we need to filter by team, we'll filter the game_details
+            const displayPlayerData = {};
             
-            // Aggregate player data across all games
-            const playerData = {};
-            const metrics = getScoringMetrics();
-            
-            displayAnalysis.forEach(game => {
-                const highlights = game.highlights || {};
-                const allStarters = [
-                    ...(game.visitor_starters || []).map(p => ({ name: p, team: game.visitor_team })),
-                    ...(game.home_starters || []).map(p => ({ name: p, team: game.home_team }))
-                ];
+            Object.keys(playerScoresData).forEach(playerName => {
+                const playerScore = playerScoresData[playerName];
+                const filteredGameDetails = filterTeams 
+                    ? (playerScore.game_details || []).filter(gameDetail => {
+                        // Extract teams from matchup
+                        const matchup = gameDetail.matchup || '';
+                        const teams = matchup.split('@');
+                        return teams.some(t => filterTeams.has(t));
+                    })
+                    : (playerScore.game_details || []);
                 
-                allStarters.forEach(playerInfo => {
-                    const player = playerInfo.name;
-                    if (!player || player === '') return;
+                // Only include players who have games after filtering
+                if (filteredGameDetails.length > 0) {
+                    // Recalculate totals based on filtered games
+                    let totalScore = 0;
+                    let first_shot_made = 0;
+                    let first_shot_missed = 0;
+                    let first_fg_made = 0;
+                    let missed_shot = 0;
+                    let free_throw = 0;
                     
-                    if (!playerData[player]) {
-                        playerData[player] = {
-                            name: player,
-                            team: playerInfo.team,
-                            games_started: 0,
-                            total_score: 0,
-                            first_shot_made: 0,
-                            first_shot_missed: 0,
-                            first_fg_made: 0,
-                            missed_shot: 0,
-                            free_throw: 0
-                        };
-                    }
-                    
-                    playerData[player].games_started++;
-                    
-                    // Handle both old format (single string) and new format (array of strings)
-                    const playerHighlights = highlights[player];
-                    const highlightsList = Array.isArray(playerHighlights) ? playerHighlights : (playerHighlights ? [playerHighlights] : []);
-                    
-                    // Process ALL highlights for this player in this game
-                    highlightsList.forEach(highlightType => {
-                        if (highlightType === 'first_shot_made') {
-                            playerData[player].total_score += metrics.first_shot_made;
-                            playerData[player].first_shot_made++;
-                        } else if (highlightType === 'first_shot_missed') {
-                            playerData[player].total_score += metrics.first_shot_missed;
-                            playerData[player].first_shot_missed++;
-                        } else if (highlightType === 'first_fg_made') {
-                            playerData[player].total_score += metrics.first_fg_made;
-                            playerData[player].first_fg_made++;
-                        } else if (highlightType === 'missed_shot') {
-                            playerData[player].total_score += metrics.missed_shot;
-                            playerData[player].missed_shot++;
-                        } else if (highlightType === 'free_throw') {
-                            playerData[player].total_score += metrics.free_throw;
-                            playerData[player].free_throw++;
-                        }
-                        // Legacy support
-                        else if (highlightType === 'green') {
-                            playerData[player].total_score += metrics.first_fg_made;
-                            playerData[player].first_fg_made++;
-                        } else if (highlightType === 'yellow') {
-                            playerData[player].total_score += metrics.missed_shot;
-                            playerData[player].missed_shot++;
-                        }
+                    filteredGameDetails.forEach(gameDetail => {
+                        totalScore += gameDetail.game_score || 0;
+                        (gameDetail.actions || []).forEach(action => {
+                            if (action.type === 'first_shot_made') first_shot_made++;
+                            else if (action.type === 'first_shot_missed') first_shot_missed++;
+                            else if (action.type === 'first_fg_made') first_fg_made++;
+                            else if (action.type === 'missed_shot') missed_shot++;
+                            else if (action.type === 'free_throw') free_throw++;
+                        });
                     });
-                });
+                    
+                    // Extract team from first game detail
+                    const firstMatchup = filteredGameDetails[0].matchup || '';
+                    const teams = firstMatchup.split('@');
+                    
+                    displayPlayerData[playerName] = {
+                        name: playerName,
+                        team: teams[0] || '', // Use first team as default
+                        games_started: filteredGameDetails.length,
+                        total_score: totalScore,
+                        first_shot_made,
+                        first_shot_missed,
+                        first_fg_made,
+                        missed_shot,
+                        free_throw,
+                        game_details: filteredGameDetails
+                    };
+                }
             });
             
             // Sort players by total score (descending)
-            const sortedPlayers = Object.values(playerData).sort((a, b) => {
+            const sortedPlayers = Object.values(displayPlayerData).sort((a, b) => {
                 if (b.total_score !== a.total_score) {
                     return b.total_score - a.total_score;
                 }
@@ -1811,6 +1794,7 @@
                     <table class="data-table">
                         <thead>
                             <tr>
+                                <th style="width: 40px;"></th>
                                 <th>Rank</th>
                                 <th>Player Name</th>
                                 <th>Team</th>
@@ -1838,41 +1822,88 @@
                                         const r = Math.round(236 - (intensity * 164)); // 236 to 72
                                         const g = Math.round(201 - (intensity * 14)); // 201 to 187
                                         const b = Math.round(75 + (intensity * 45)); // 75 to 120
-                                        bgColor = `rgb(${r}, ${g}, ${b})`;
+                                        bgColor = \`rgb(\${r}, \${g}, \${b})\`;
                                     } else {
                                         // Light green to bright green (1 to 2)
                                         const intensity = (avgScore - 1.0); // 0 to 1
                                         const r = Math.round(72 - (intensity * 6)); // 72 to 66
                                         const g = Math.round(187 + (intensity * 10)); // 187 to 197
                                         const b = Math.round(120 - (intensity * 26)); // 120 to 94
-                                        bgColor = `rgb(${r}, ${g}, ${b})`;
+                                        bgColor = \`rgb(\${r}, \${g}, \${b})\`;
                                     }
                                 }
                                 
                                 const textColor = isZeroScore ? '#6b7280' : (avgScore > 0.75 ? 'white' : '#2d3748');
                                 const fontStyle = isZeroScore ? 'opacity: 0.5;' : '';
                                 
-                                return `
-                                    <tr style="${fontStyle}">
-                                        <td style="text-align: center; font-weight: 600; color: #667eea;">${index + 1}</td>
-                                        <td class="player-name" style="font-weight: 600;">${player.name}</td>
-                                        <td style="text-align: center; font-weight: 600; color: #764ba2;">${player.team || ''}</td>
-                                        <td style="text-align: center;">${player.games_started}</td>
+                                // Game details rows
+                                const gameDetailsHTML = player.game_details.map(gameDetail => {
+                                    const actions = gameDetail.actions || [];
+                                    const actionsHTML = actions.map(action => {
+                                        const actionLabels = {
+                                            'first_shot_made': 'First Shot Made',
+                                            'first_shot_missed': 'First Shot Missed',
+                                            'first_fg_made': 'First FG Made',
+                                            'missed_shot': 'Missed Shot',
+                                            'free_throw': 'Free Throw'
+                                        };
+                                        return \`<span style="display: inline-block; margin: 2px; padding: 3px 8px; background: #e0e7ff; color: #5b21b6; border-radius: 4px; font-size: 11px;">\${actionLabels[action.type] || action.type} (+\${action.score.toFixed(2)})</span>\`;
+                                    }).join('');
+                                    
+                                    return \`
+                                        <tr style="font-size: 12px; background: #f9fafb;">
+                                            <td style="padding: 8px; border-left: 3px solid #667eea;">\${gameDetail.date || ''}</td>
+                                            <td style="padding: 8px;">\${gameDetail.matchup || ''}</td>
+                                            <td style="padding: 8px;">\${actionsHTML || '<span style="color: #9ca3af;">No actions</span>'}</td>
+                                            <td style="padding: 8px; font-weight: 600; color: #667eea;">+\${(gameDetail.game_score || 0).toFixed(2)}</td>
+                                        </tr>
+                                    \`;
+                                }).join('');
+                                
+                                return \`
+                                    <tr onclick="togglePlayerDetails('player_\${index}')" style="\${fontStyle} cursor: pointer;" data-player-row>
                                         <td style="text-align: center;">
-                                            <span style="padding: 4px 12px; border-radius: 4px; font-weight: 600; background: ${bgColor}; color: ${textColor}; font-size: 13px;">
-                                                ${player.total_score.toFixed(2)}
+                                            <span id="player_\${index}_arrow" style="display: inline-block; transition: transform 0.3s; font-size: 12px;">▶</span>
+                                        </td>
+                                        <td style="text-align: center; font-weight: 600; color: #667eea;">\${index + 1}</td>
+                                        <td class="player-name" style="font-weight: 600;">\${player.name}</td>
+                                        <td style="text-align: center; font-weight: 600; color: #764ba2;">\${player.team || ''}</td>
+                                        <td style="text-align: center;">\${player.games_started}</td>
+                                        <td style="text-align: center;">
+                                            <span style="padding: 4px 12px; border-radius: 4px; font-weight: 600; background: \${bgColor}; color: \${textColor}; font-size: 13px;">
+                                                \${player.total_score.toFixed(2)}
                                             </span>
                                         </td>
-                                        <td style="text-align: center; font-weight: 600; color: ${isZeroScore ? '#9ca3af' : '#4b5563'};">
-                                            ${avgScore.toFixed(2)}
+                                        <td style="text-align: center; font-weight: 600; color: \${isZeroScore ? '#9ca3af' : '#4b5563'};">
+                                            \${avgScore.toFixed(2)}
                                         </td>
-                                        <td style="text-align: center;">${player.first_shot_made}</td>
-                                        <td style="text-align: center;">${player.first_shot_missed}</td>
-                                        <td style="text-align: center;">${player.first_fg_made}</td>
-                                        <td style="text-align: center;">${player.missed_shot}</td>
-                                        <td style="text-align: center;">${player.free_throw}</td>
+                                        <td style="text-align: center;">\${player.first_shot_made}</td>
+                                        <td style="text-align: center;">\${player.first_shot_missed}</td>
+                                        <td style="text-align: center;">\${player.first_fg_made}</td>
+                                        <td style="text-align: center;">\${player.missed_shot}</td>
+                                        <td style="text-align: center;">\${player.free_throw}</td>
                                     </tr>
-                                `;
+                                    <tr id="player_\${index}_details" style="display: none;">
+                                        <td colspan="12" style="padding: 0; background: #f3f4f6;">
+                                            <div style="padding: 15px; margin: 10px 0;">
+                                                <h4 style="margin: 0 0 10px 0; color: #2d3748; font-size: 14px;">Game-by-Game Breakdown for \${player.name}</h4>
+                                                <table style="width: 100%; border-collapse: collapse;">
+                                                    <thead>
+                                                        <tr style="background: #e5e7eb; font-size: 12px;">
+                                                            <th style="padding: 8px; text-align: left;">Date</th>
+                                                            <th style="padding: 8px; text-align: left;">Matchup</th>
+                                                            <th style="padding: 8px; text-align: left;">Actions</th>
+                                                            <th style="padding: 8px; text-align: left;">Score</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        \${gameDetailsHTML}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                \`;
                             }).join('')}
                         </tbody>
                     </table>
@@ -1880,6 +1911,19 @@
             `;
             
             analysisContent.innerHTML = html;
+        }
+        
+        function togglePlayerDetails(playerId) {
+            const details = document.getElementById(\`\${playerId}_details\`);
+            const arrow = document.getElementById(\`\${playerId}_arrow\`);
+            
+            if (details.style.display === 'none') {
+                details.style.display = 'table-row';
+                arrow.style.transform = 'rotate(90deg)';
+            } else {
+                details.style.display = 'none';
+                arrow.style.transform = 'rotate(0deg)';
+            }
         }
         
         function toggleTeamDetails(teamId) {
