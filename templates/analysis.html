@@ -1894,14 +1894,14 @@
                                         const r = Math.round(236 - (intensity * 164)); // 236 to 72
                                         const g = Math.round(201 - (intensity * 14)); // 201 to 187
                                         const b = Math.round(75 + (intensity * 45)); // 75 to 120
-                                        bgColor = \`rgb(\${r}, \${g}, \${b})\`;
+                                        bgColor = 'rgb(' + r + ', ' + g + ', ' + b + ')';
                                     } else {
                                         // Light green to bright green (1 to 2)
                                         const intensity = (avgScore - 1.0); // 0 to 1
                                         const r = Math.round(72 - (intensity * 6)); // 72 to 66
                                         const g = Math.round(187 + (intensity * 10)); // 187 to 197
                                         const b = Math.round(120 - (intensity * 26)); // 120 to 94
-                                        bgColor = \`rgb(\${r}, \${g}, \${b})\`;
+                                        bgColor = 'rgb(' + r + ', ' + g + ', ' + b + ')';
                                     }
                                 }
                                 
@@ -1919,46 +1919,44 @@
                                             'missed_shot': 'Missed Shot',
                                             'free_throw': 'Free Throw'
                                         };
-                                        return \`<span style="display: inline-block; margin: 2px; padding: 3px 8px; background: #e0e7ff; color: #5b21b6; border-radius: 4px; font-size: 11px;">\${actionLabels[action.type] || action.type} (+\${action.score.toFixed(2)})</span>\`;
+                                        return '<span style="display: inline-block; margin: 2px; padding: 3px 8px; background: #e0e7ff; color: #5b21b6; border-radius: 4px; font-size: 11px;">' + (actionLabels[action.type] || action.type) + ' (+' + action.score.toFixed(2) + ')</span>';
                                     }).join('');
                                     
-                                    return \`
-                                        <tr style="font-size: 12px; background: #f9fafb;">
-                                            <td style="padding: 8px; border-left: 3px solid #667eea;">\${gameDetail.date || ''}</td>
-                                            <td style="padding: 8px;">\${gameDetail.matchup || ''}</td>
-                                            <td style="padding: 8px;">\${actionsHTML || '<span style="color: #9ca3af;">No actions</span>'}</td>
-                                            <td style="padding: 8px; font-weight: 600; color: #667eea;">+\${(gameDetail.game_score || 0).toFixed(2)}</td>
-                                        </tr>
-                                    \`;
+                                    return '<tr style="font-size: 12px; background: #f9fafb;">' +
+                                        '<td style="padding: 8px; border-left: 3px solid #667eea;">' + (gameDetail.date || '') + '</td>' +
+                                        '<td style="padding: 8px;">' + (gameDetail.matchup || '') + '</td>' +
+                                        '<td style="padding: 8px;">' + (actionsHTML || '<span style="color: #9ca3af;">No actions</span>') + '</td>' +
+                                        '<td style="padding: 8px; font-weight: 600; color: #667eea;">+' + (gameDetail.game_score || 0).toFixed(2) + '</td>' +
+                                        '</tr>';
                                 }).join('');
                                 
-                                return \`
-                                    <tr onclick="togglePlayerDetails('player_\${index}')" style="\${fontStyle} cursor: pointer;" data-player-row>
+                                return `
+                                    <tr onclick="togglePlayerDetails('player_${index}')" style="${fontStyle} cursor: pointer;" data-player-row>
                                         <td style="text-align: center;">
-                                            <span id="player_\${index}_arrow" style="display: inline-block; transition: transform 0.3s; font-size: 12px;">▶</span>
+                                            <span id="player_${index}_arrow" style="display: inline-block; transition: transform 0.3s; font-size: 12px;">▶</span>
                                         </td>
-                                        <td style="text-align: center; font-weight: 600; color: #667eea;">\${index + 1}</td>
-                                        <td class="player-name" style="font-weight: 600;">\${player.name}</td>
-                                        <td style="text-align: center; font-weight: 600; color: #764ba2;">\${player.team || ''}</td>
-                                        <td style="text-align: center;">\${player.games_started}</td>
+                                        <td style="text-align: center; font-weight: 600; color: #667eea;">${index + 1}</td>
+                                        <td class="player-name" style="font-weight: 600;">${player.name}</td>
+                                        <td style="text-align: center; font-weight: 600; color: #764ba2;">${player.team || ''}</td>
+                                        <td style="text-align: center;">${player.games_started}</td>
                                         <td style="text-align: center;">
-                                            <span style="padding: 4px 12px; border-radius: 4px; font-weight: 600; background: \${bgColor}; color: \${textColor}; font-size: 13px;">
-                                                \${player.total_score.toFixed(2)}
+                                            <span style="padding: 4px 12px; border-radius: 4px; font-weight: 600; background: ${bgColor}; color: ${textColor}; font-size: 13px;">
+                                                ${player.total_score.toFixed(2)}
                                             </span>
                                         </td>
-                                        <td style="text-align: center; font-weight: 600; color: \${isZeroScore ? '#9ca3af' : '#4b5563'};">
-                                            \${avgScore.toFixed(2)}
+                                        <td style="text-align: center; font-weight: 600; color: ${isZeroScore ? '#9ca3af' : '#4b5563'};">
+                                            ${avgScore.toFixed(2)}
                                         </td>
-                                        <td style="text-align: center;">\${player.first_shot_made}</td>
-                                        <td style="text-align: center;">\${player.first_shot_missed}</td>
-                                        <td style="text-align: center;">\${player.first_fg_made}</td>
-                                        <td style="text-align: center;">\${player.missed_shot}</td>
-                                        <td style="text-align: center;">\${player.free_throw}</td>
+                                        <td style="text-align: center;">${player.first_shot_made}</td>
+                                        <td style="text-align: center;">${player.first_shot_missed}</td>
+                                        <td style="text-align: center;">${player.first_fg_made}</td>
+                                        <td style="text-align: center;">${player.missed_shot}</td>
+                                        <td style="text-align: center;">${player.free_throw}</td>
                                     </tr>
-                                    <tr id="player_\${index}_details" style="display: none;">
+                                    <tr id="player_${index}_details" style="display: none;">
                                         <td colspan="12" style="padding: 0; background: #f3f4f6;">
                                             <div style="padding: 15px; margin: 10px 0;">
-                                                <h4 style="margin: 0 0 10px 0; color: #2d3748; font-size: 14px;">Game-by-Game Breakdown for \${player.name}</h4>
+                                                <h4 style="margin: 0 0 10px 0; color: #2d3748; font-size: 14px;">Game-by-Game Breakdown for ${player.name}</h4>
                                                 <table style="width: 100%; border-collapse: collapse;">
                                                     <thead>
                                                         <tr style="background: #e5e7eb; font-size: 12px;">
@@ -1969,13 +1967,13 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        \${gameDetailsHTML}
+                                                        ${gameDetailsHTML}
                                                     </tbody>
                                                 </table>
                                             </div>
                                         </td>
                                     </tr>
-                                \`;
+                                `;
                             }).join('')}
                         </tbody>
                     </table>
@@ -1986,8 +1984,8 @@
         }
         
         function togglePlayerDetails(playerId) {
-            const details = document.getElementById(\`\${playerId}_details\`);
-            const arrow = document.getElementById(\`\${playerId}_arrow\`);
+            const details = document.getElementById(`${playerId}_details`);
+            const arrow = document.getElementById(`${playerId}_arrow`);
             
             if (details.style.display === 'none') {
                 details.style.display = 'table-row';
