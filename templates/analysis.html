@@ -504,21 +504,6 @@
             </div>
         </div>
 
-        <div class="main-card">
-            <h3 style="margin-bottom: 15px; color: #2d3748;">Player Score Legend</h3>
-            <div style="background: #f7fafc; padding: 15px; border-radius: 8px; font-size: 13px;">
-                <p><strong>Shot Score:</strong> Calculated based on the scoring metrics configured above. Adjust the values to see how scores change dynamically!</p>
-                <p style="margin-top: 10px;"><strong>Games Started:</strong> Total number of games the player has started</p>
-                <p style="margin-top: 10px;"><strong>Format:</strong> Shot Score / Games Started</p>
-                <p style="margin-top: 10px;"><strong>Color Highlights in Upcoming Games:</strong></p>
-                <ul style="margin-left: 20px; margin-top: 5px;">
-                    <li><span style="background: #f3f4f6; padding: 2px 6px; border-radius: 3px; opacity: 0.6;">Grey</span> - Player has 0 total score</li>
-                    <li><span style="background: #fef3c7; padding: 2px 6px; border-radius: 3px;">Yellow</span> - Average score ≥ Yellow Threshold (adjustable above)</li>
-                    <li><span style="background: #d1fae5; padding: 2px 6px; border-radius: 3px;">Green</span> - Average score ≥ Green Threshold (adjustable above)</li>
-                </ul>
-            </div>
-        </div>
-
         <!-- Historical Analysis Table -->
         <div class="main-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -542,23 +527,23 @@
                 <strong>Legend:</strong>
                 <div class="legend-item">
                     <span class="legend-color highlight-first-shot-made" style="padding: 4px 8px;">Bright Green</span>
-                    <span>Took & made the FIRST shot of the game (<span id="legend_first_shot_made">+2.0</span>)</span>
+                    <span>Took & made the FIRST shot of the game (<span id="legend_first_shot_made">+1.0</span>)</span>
                 </div>
                 <div class="legend-item">
                     <span class="legend-color highlight-first-shot-missed" style="padding: 4px 8px;">Bright Yellow</span>
-                    <span>Took & missed the FIRST shot of the game (<span id="legend_first_shot_missed">+1.0</span>)</span>
+                    <span>Took & missed the FIRST shot of the game (<span id="legend_first_shot_missed">+0.75</span>)</span>
                 </div>
                 <div class="legend-item">
                     <span class="legend-color highlight-first-fg-made" style="padding: 4px 8px;">Green</span>
-                    <span>Made first FG (but wasn't first shot) (<span id="legend_first_fg_made">+0.75</span>)</span>
+                    <span>Made first FG (but wasn't first shot) (<span id="legend_first_fg_made">+0.5</span>)</span>
                 </div>
                 <div class="legend-item">
                     <span class="legend-color highlight-missed-shot" style="padding: 4px 8px;">Yellow</span>
-                    <span>Missed shot before first FG (<span id="legend_missed_shot">+0.5</span>)</span>
+                    <span>Missed shot before first FG (<span id="legend_missed_shot">+0.25</span>)</span>
                 </div>
                 <div class="legend-item">
                     <span class="legend-color highlight-free-throw" style="padding: 4px 8px;">Outline</span>
-                    <span>Took free throws before first FG (<span id="legend_free_throw">+0.25</span>)</span>
+                    <span>Took free throws before first FG (<span id="legend_free_throw">+1.0</span>)</span>
                 </div>
             </div>
             <div id="analysisContent">
@@ -719,9 +704,9 @@
             if (pbpDataCache) return pbpDataCache;
             
             try {
-                const response = await fetch('/api/preview?from_csv=true');
+                const response = await fetch('/api/pbp');
                 const data = await response.json();
-                pbpDataCache = data.pbp_preview || [];
+                pbpDataCache = data.pbp_data || [];
                 return pbpDataCache;
             } catch (error) {
                 console.error('Error loading PBP data:', error);

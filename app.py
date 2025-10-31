@@ -221,6 +221,36 @@ def get_preview():
     })
 
 
+@app.route('/api/pbp')
+def get_all_pbp():
+    """Get all play-by-play data from CSV"""
+    try:
+        _, pbp_data = load_data_from_csv()
+        
+        # Convert all PBP data to simplified format
+        pbp_all = []
+        for play in pbp_data:
+            pbp_all.append({
+                'game_key': play.get('game_key', ''),
+                'date': play.get('date', ''),
+                'matchup': play.get('matchup', ''),
+                'visitor_team': play.get('visitor_team', ''),
+                'home_team': play.get('home_team', ''),
+                'time': play.get('time', ''),
+                'visitor_play': play.get('visitor_play', ''),
+                'home_play': play.get('home_play', ''),
+                'score': play.get('score', '')
+            })
+        
+        return jsonify({
+            'plays_count': len(pbp_all),
+            'pbp_data': pbp_all
+        })
+    except Exception as e:
+        logger.error(f"Error loading PBP data from CSV: {e}")
+        return jsonify({'error': str(e), 'plays_count': 0, 'pbp_data': []}), 500
+
+
 @app.route('/api/analysis')
 def get_analysis():
     """Get first shot analysis for all games"""
