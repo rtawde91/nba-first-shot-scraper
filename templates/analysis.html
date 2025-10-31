@@ -587,6 +587,9 @@
             analysisData.forEach(game => {
                 const highlights = game.highlights || {};
                 const allStarters = [...(game.visitor_starters || []), ...(game.home_starters || [])];
+                const gameKey = game.game_key || '';
+                const gameDate = game.date || '';
+                const gameMatchup = game.matchup || '';
                 
                 allStarters.forEach(player => {
                     if (!player || player === '') return;
@@ -599,7 +602,8 @@
                             first_shot_missed: 0,
                             first_fg_made: 0,
                             missed_shot: 0,
-                            free_throw: 0
+                            free_throw: 0,
+                            game_details: []
                         };
                     }
                     
@@ -609,24 +613,66 @@
                     const playerHighlights = highlights[player];
                     const highlightsList = Array.isArray(playerHighlights) ? playerHighlights : (playerHighlights ? [playerHighlights] : []);
                     
-                    // Process ALL highlights for this player in this game
-                    highlightsList.forEach(highlightType => {
-                        if (highlightType === 'first_shot_made') {
-                            scores[player].shot_score += metrics.first_shot_made;
-                            scores[player].first_shot_made++;
-                        } else if (highlightType === 'first_shot_missed') {
-                            scores[player].shot_score += metrics.first_shot_missed;
-                            scores[player].first_shot_missed++;
-                        } else if (highlightType === 'first_fg_made') {
-                            scores[player].shot_score += metrics.first_fg_made;
-                            scores[player].first_fg_made++;
-                        } else if (highlightType === 'missed_shot') {
-                            scores[player].shot_score += metrics.missed_shot;
-                            scores[player].missed_shot++;
-                        } else if (highlightType === 'free_throw') {
-                            scores[player].shot_score += metrics.free_throw;
-                            scores[player].free_throw++;
+                    // Deduplicate free throws - only count once per game
+                    const uniqueHighlights = [];
+                    let hasFreeThrow = false;
+                    highlightsList.forEach(hl => {
+                        if (hl === 'free_throw') {
+                            if (!hasFreeThrow) {
+                                uniqueHighlights.push(hl);
+                                hasFreeThrow = true;
+                            }
+                        } else {
+                            uniqueHighlights.push(hl);
                         }
+                    });
+                    
+                    // Calculate game score and actions
+                    let gameScore = 0;
+                    const actions = [];
+                    
+                    // Process ALL unique highlights for this player in this game
+                    uniqueHighlights.forEach(highlightType => {
+                        if (highlightType === 'first_shot_made') {
+                            const actionScore = metrics.first_shot_made;
+                            scores[player].shot_score += actionScore;
+                            scores[player].first_shot_made++;
+                            gameScore += actionScore;
+                            actions.push({ type: 'first_shot_made', score: actionScore });
+                        } else if (highlightType === 'first_shot_missed') {
+                            const actionScore = metrics.first_shot_missed;
+                            scores[player].shot_score += actionScore;
+                            scores[player].first_shot_missed++;
+                            gameScore += actionScore;
+                            actions.push({ type: 'first_shot_missed', score: actionScore });
+                        } else if (highlightType === 'first_fg_made') {
+                            const actionScore = metrics.first_fg_made;
+                            scores[player].shot_score += actionScore;
+                            scores[player].first_fg_made++;
+                            gameScore += actionScore;
+                            actions.push({ type: 'first_fg_made', score: actionScore });
+                        } else if (highlightType === 'missed_shot') {
+                            const actionScore = metrics.missed_shot;
+                            scores[player].shot_score += actionScore;
+                            scores[player].missed_shot++;
+                            gameScore += actionScore;
+                            actions.push({ type: 'missed_shot', score: actionScore });
+                        } else if (highlightType === 'free_throw') {
+                            const actionScore = metrics.free_throw;
+                            scores[player].shot_score += actionScore;
+                            scores[player].free_throw++;
+                            gameScore += actionScore;
+                            actions.push({ type: 'free_throw', score: actionScore });
+                        }
+                    });
+                    
+                    // Record game details
+                    scores[player].game_details.push({
+                        game_key: gameKey,
+                        date: gameDate,
+                        matchup: gameMatchup,
+                        actions: actions,
+                        game_score: gameScore
                     });
                 });
             });
