@@ -119,6 +119,12 @@ def analysis_page():
     return render_template('analysis.html')
 
 
+@app.route('/test_api')
+def test_api_page():
+    """Serve the API test page"""
+    return render_template('test_api.html')
+
+
 @app.route('/api/status')
 def get_status():
     """Get current scraping status"""

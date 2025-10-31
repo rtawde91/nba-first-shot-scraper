@@ -833,14 +833,22 @@
             const analysisContent = document.getElementById('analysisContent');
             const upcomingContent = document.getElementById('upcomingGamesContent');
             
+            console.log('[FSA] Starting refreshAnalysis...');
             analysisContent.innerHTML = '<div class="loading"><div class="spinner"></div> Loading analysis...</div>';
             upcomingContent.innerHTML = '<div class="loading"><div class="spinner"></div> Loading upcoming games...</div>';
 
             try {
+                console.log('[FSA] Fetching data from /api/analysis...');
                 const response = await fetch('/api/analysis?from_csv=true');
                 const data = await response.json();
+                console.log('[FSA] Received data:', {
+                    analysis_count: data.analysis?.length || 0,
+                    player_scores_count: Object.keys(data.player_scores || {}).length,
+                    upcoming_games_count: data.upcoming_games?.length || 0
+                });
 
                 if (data.error) {
+                    console.error('[FSA] API returned error:', data.error);
                     analysisContent.innerHTML = `
                         <div class="error-message">
                             <strong>Error:</strong> ${data.error}
@@ -857,14 +865,25 @@
 
                 // Store raw analysis data for recalculation
                 rawAnalysisData = data.analysis || [];
+                console.log('[FSA] Stored rawAnalysisData:', rawAnalysisData.length, 'games');
                 
                 // Calculate player scores using current metrics
+                console.log('[FSA] Calculating player scores from data...');
                 playerScoresData = calculatePlayerScoresFromData(rawAnalysisData);
+                console.log('[FSA] Calculated playerScoresData:', Object.keys(playerScoresData).length, 'players');
+                
+                // Check if game_details exists
+                const firstPlayer = Object.keys(playerScoresData)[0];
+                if (firstPlayer) {
+                    console.log('[FSA] First player sample:', firstPlayer, playerScoresData[firstPlayer]);
+                }
 
                 // Render upcoming games with calculated player scores
                 if (data.upcoming_games && data.upcoming_games.length > 0) {
+                    console.log('[FSA] Rendering upcoming games...');
                     renderUpcomingGames(data.upcoming_games, playerScoresData);
                 } else {
+                    console.log('[FSA] No upcoming games to render');
                     upcomingContent.innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state-icon">📭</div>
@@ -876,8 +895,11 @@
 
                 // Render historical analysis table
                 if (rawAnalysisData.length > 0) {
+                    console.log('[FSA] Rendering historical analysis table...');
                     renderAnalysisTable(rawAnalysisData);
+                    console.log('[FSA] Historical analysis rendered successfully');
                 } else {
+                    console.log('[FSA] No historical data to render');
                     analysisContent.innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state-icon">📭</div>
@@ -886,12 +908,16 @@
                         </div>
                     `;
                 }
+                
+                console.log('[FSA] refreshAnalysis completed successfully');
 
             } catch (error) {
-                console.error('Error loading analysis:', error);
+                console.error('[FSA] Error in refreshAnalysis:', error);
+                console.error('[FSA] Error stack:', error.stack);
                 analysisContent.innerHTML = `
                     <div class="error-message">
                         <strong>Error:</strong> ${error.message}
+                        <br><small>Check browser console for details</small>
                     </div>
                     <div class="empty-state">
                         <div class="empty-state-icon">❌</div>

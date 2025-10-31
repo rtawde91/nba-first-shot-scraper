@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test</h1>
+    <button onclick="testAPI()">Test API</button>
+    <pre id="output"></pre>
+
+    <script>
+        async function testAPI() {
+            const output = document.getElementById('output');
+            output.textContent = 'Loading...';
+            
+            try {
+                const response = await fetch('/api/analysis?from_csv=true');
+                const data = await response.json();
+                
+                output.textContent = JSON.stringify({
+                    analysis_count: data.analysis?.length || 0,
+                    player_scores_count: Object.keys(data.player_scores || {}).length,
+                    upcoming_games_count: data.upcoming_games?.length || 0,
+                    first_player: Object.keys(data.player_scores || {})[0],
+                    first_player_data: data.player_scores ? data.player_scores[Object.keys(data.player_scores)[0]] : null
+                }, null, 2);
+            } catch (error) {
+                output.textContent = 'ERROR: ' + error.message;
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>
+
