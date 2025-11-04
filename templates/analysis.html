@@ -586,7 +586,11 @@
             
             analysisData.forEach(game => {
                 const highlights = game.highlights || {};
-                const allStarters = [...(game.visitor_starters || []), ...(game.home_starters || [])];
+                const visitorStarters = game.visitor_starters || [];
+                const homeStarters = game.home_starters || [];
+                const visitorTeam = game.visitor_team || '';
+                const homeTeam = game.home_team || '';
+                const allStarters = [...visitorStarters, ...homeStarters];
                 const gameKey = game.game_key || '';
                 const gameDate = game.date || '';
                 const gameMatchup = game.matchup || '';
@@ -594,10 +598,14 @@
                 allStarters.forEach(player => {
                     if (!player || player === '') return;
                     
+                    // Determine player's team
+                    const playerTeam = visitorStarters.includes(player) ? visitorTeam : homeTeam;
+                    
                     if (!scores[player]) {
                         scores[player] = {
                             shot_score: 0,
                             games_started: 0,
+                            team: playerTeam,  // Store player's primary team
                             first_shot_made: 0,
                             first_shot_missed: 0,
                             first_fg_made: 0,
@@ -671,6 +679,7 @@
                         game_key: gameKey,
                         date: gameDate,
                         matchup: gameMatchup,
+                        team: playerTeam,  // Include player's team for this game
                         actions: actions,
                         game_score: gameScore
                     });
@@ -764,6 +773,79 @@
             const gameRow = document.querySelector(`tr[data-game-key="${gameKey}"]`);
             const detailRow = document.getElementById(`pbp-detail-${rowIndex}`);
             const detailContent = document.getElementById(`pbp-content-${rowIndex}`);
+            
+            // Toggle expanded state
+            const isExpanded = gameRow.classList.contains('expanded');
+            
+            if (isExpanded) {
+                // Collapse
+                gameRow.classList.remove('expanded');
+                detailContent.classList.remove('expanded');
+                setTimeout(() => {
+                    detailRow.classList.remove('show');
+                }, 300);
+            } else {
+                // Expand
+                gameRow.classList.add('expanded');
+                detailRow.classList.add('show');
+                
+                // Load PBP data if not already loaded
+                if (!detailContent.dataset.loaded) {
+                    detailContent.innerHTML = '<div class="pbp-loading"><div class="spinner"></div> Loading play-by-play data...</div>';
+                    
+                    setTimeout(async () => {
+                        const allPBP = await loadPBPData();
+                        const gamePBP = allPBP.filter(play => play.game_key === gameKey);
+                        
+                        if (gamePBP.length > 0) {
+                            const pbpHTML = `
+                                <h3 style="margin-bottom: 15px; color: #2d3748;">Play-by-Play: ${gameKey}</h3>
+                                <table class="pbp-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>Visitor Play</th>
+                                            <th>Home Play</th>
+                                            <th>Score</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${gamePBP.map(play => `
+                                            <tr>
+                                                <td>${play.time || ''}</td>
+                                                <td>${play.visitor_play || ''}</td>
+                                                <td>${play.home_play || ''}</td>
+                                                <td>${play.score || ''}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            `;
+                            detailContent.innerHTML = pbpHTML;
+                        } else {
+                            detailContent.innerHTML = '<div class="pbp-loading">No play-by-play data available for this game.</div>';
+                        }
+                        
+                        detailContent.dataset.loaded = 'true';
+                        detailContent.classList.add('expanded');
+                    }, 50);
+                } else {
+                    // Already loaded, just expand
+                    setTimeout(() => {
+                        detailContent.classList.add('expanded');
+                    }, 50);
+                }
+            }
+        }
+
+        async function toggleTeamGamePBP(gameKey, teamCode, gameIndex) {
+            const rowId = `team-game-${teamCode}-${gameIndex}`;
+            const detailRowId = `team-pbp-detail-${teamCode}-${gameIndex}`;
+            const detailContentId = `team-pbp-content-${teamCode}-${gameIndex}`;
+            
+            const gameRow = document.getElementById(rowId);
+            const detailRow = document.getElementById(detailRowId);
+            const detailContent = document.getElementById(detailContentId);
             
             // Toggle expanded state
             const isExpanded = gameRow.classList.contains('expanded');
@@ -1681,10 +1763,11 @@
                                                 return dateB - dateA;
                                             });
                                             
-                                            sortedGames.forEach(game => {
+                                            sortedGames.forEach((game, gameIdx) => {
                                                 const opponent = game.isHome ? game.visitor_team : game.home_team;
                                                 const homeAway = game.isHome ? 'vs' : '@';
                                                 const highlights = game.highlights || {};
+                                                const gameKey = game.game_key || '';
                                                 
                                                 const getHighlight = (playerName) => {
                                                     const playerHighlights = highlights[playerName];
@@ -1752,13 +1835,20 @@
                                                     }
                                                 });
                                                 
+                                                // Game row with expand functionality
                                                 tableHTML += `
-                                                    <tr>
-                                                        <td style="white-space: nowrap;">${game.date}</td>
+                                                    <tr class="game-row" id="team-game-${teamCode}-${gameIdx}" onclick="toggleTeamGamePBP('${gameKey}', '${teamCode}', ${gameIdx})" style="cursor: pointer;">
+                                                        <td style="white-space: nowrap;"><span class="expand-icon">▶</span> ${game.date}</td>
                                                         <td style="white-space: nowrap;">${homeAway} ${opponent}</td>
                                                         ${displayStarters.map(player => 
                                                             `<td class="player-name ${getHighlight(player || '')}">${player || ''}${generateTooltipHtml(player)}</td>`
                                                         ).join('')}
+                                                    </tr>
+                                                    <tr class="pbp-detail-row" id="team-pbp-detail-${teamCode}-${gameIdx}">
+                                                        <td colspan="${totalStarters + 2}" class="pbp-detail-cell">
+                                                            <div class="pbp-detail-content" id="team-pbp-content-${teamCode}-${gameIdx}">
+                                                            </div>
+                                                        </td>
                                                     </tr>
                                                 `;
                                             });
@@ -1799,11 +1889,18 @@
             }
             
             // Use playerScoresData from backend which includes game_details
-            // If we need to filter by team, we'll filter the game_details
             const displayPlayerData = {};
             
             Object.keys(playerScoresData).forEach(playerName => {
                 const playerScore = playerScoresData[playerName];
+                const playerTeam = playerScore.team || '';
+                
+                // If filtering by game, only include players whose team is one of the selected teams
+                if (filterTeams && !filterTeams.has(playerTeam)) {
+                    return; // Skip this player
+                }
+                
+                // Filter game details if needed (for historical games display)
                 const filteredGameDetails = filterTeams 
                     ? (playerScore.game_details || []).filter(gameDetail => {
                         // Extract teams from matchup
@@ -1834,13 +1931,9 @@
                         });
                     });
                     
-                    // Extract team from first game detail
-                    const firstMatchup = filteredGameDetails[0].matchup || '';
-                    const teams = firstMatchup.split('@');
-                    
                     displayPlayerData[playerName] = {
                         name: playerName,
-                        team: teams[0] || '', // Use first team as default
+                        team: playerTeam,  // Use player's actual team from backend
                         games_started: filteredGameDetails.length,
                         total_score: totalScore,
                         first_shot_made,

@@ -722,8 +722,26 @@ class BasketballReferenceScraperWithProgress:
         """Get the most recent starting roster for each team from historical data"""
         team_rosters = {}
         
+        # If games_data is empty, try loading from CSV
+        games_to_check = self.games_data
+        if not games_to_check:
+            logger.info("games_data is empty, attempting to load from CSV for roster data...")
+            try:
+                import os
+                games_file = 'games_and_rosters.csv'
+                if os.path.exists(games_file):
+                    df = pd.read_csv(games_file).fillna('')
+                    games_to_check = df.to_dict('records')
+                    logger.info(f"Loaded {len(games_to_check)} games from CSV for roster lookup")
+                else:
+                    logger.warning(f"CSV file {games_file} not found. Cannot load rosters.")
+                    return team_rosters
+            except Exception as e:
+                logger.error(f"Error loading games from CSV: {e}")
+                return team_rosters
+        
         # Go through games_data in reverse order (most recent first)
-        for game in reversed(self.games_data):
+        for game in reversed(games_to_check):
             visitor_team = game.get('visitor_team', '')
             home_team = game.get('home_team', '')
             
@@ -782,69 +800,76 @@ class BasketballReferenceScraperWithProgress:
             self.progress.update_upcoming(0, "Fetching upcoming games...")
             
             upcoming_games = []
-            
-            # Get the schedule for the current month
-            current_month = datetime.now().strftime('%B').lower()
             season = seasons[0] if seasons else '2026'
             season_int = int(season)
             
-            url = f"{self.BASE_URL}/leagues/NBA_{season}_games-{current_month}.html"
-            soup = self._make_request(url)
+            # Determine which months to check (today's and tomorrow's if they differ)
+            months_to_check = set()
+            months_to_check.add(today.strftime('%B').lower())
+            if tomorrow.month != today.month:
+                months_to_check.add(tomorrow.strftime('%B').lower())
+                logger.info(f"Dates span multiple months, checking: {', '.join(months_to_check)}")
             
-            if soup:
-                schedule_table = soup.find('table', {'id': 'schedule'})
-                if schedule_table:
-                    tbody = schedule_table.find('tbody')
-                    if tbody:
-                        for row in tbody.find_all('tr'):
-                            if row.get('class') and 'thead' in row.get('class'):
-                                continue
-                            
-                            cells = row.find_all(['td', 'th'])
-                            if len(cells) < 7:
-                                continue
-                            
-                            date_cell = cells[0]
-                            visitor_cell = cells[2]
-                            home_cell = cells[4]
-                            box_score_cell = cells[6]
-                            
-                            # Parse date
-                            date_text = date_cell.get_text(strip=True)
-                            if not date_text:
-                                continue
-                            
-                            try:
-                                # Parse date like "Tue, Oct 29, 2025"
-                                game_date = datetime.strptime(date_text, '%a, %b %d, %Y').date()
-                            except:
-                                try:
-                                    # Try alternate format
-                                    game_date = datetime.strptime(date_text, '%A, %B %d, %Y').date()
-                                except:
+            # Check each relevant month
+            for month_name in months_to_check:
+                url = f"{self.BASE_URL}/leagues/NBA_{season}_games-{month_name}.html"
+                logger.info(f"Fetching schedule from: {url}")
+                soup = self._make_request(url)
+                
+                if soup:
+                    schedule_table = soup.find('table', {'id': 'schedule'})
+                    if schedule_table:
+                        tbody = schedule_table.find('tbody')
+                        if tbody:
+                            for row in tbody.find_all('tr'):
+                                if row.get('class') and 'thead' in row.get('class'):
                                     continue
-                            
-                            # Only include games for today or tomorrow
-                            if game_date not in [today, tomorrow]:
-                                continue
-                            
-                            # Check if game has started (has box score link)
-                            box_score_link = box_score_cell.find('a')
-                            if box_score_link and box_score_link.get('href'):
-                                # Game has started or finished, skip it
-                                continue
-                            
-                            visitor_team = visitor_cell.get_text(strip=True)
-                            home_team = home_cell.get_text(strip=True)
-                            
-                            if visitor_team and home_team:
-                                upcoming_games.append({
-                                    'date': date_text,
-                                    'visitor_team': visitor_team,
-                                    'home_team': home_team,
-                                    'season': season
-                                })
-                                logger.info(f"Found upcoming game: {visitor_team} @ {home_team} on {date_text}")
+                                
+                                cells = row.find_all(['td', 'th'])
+                                if len(cells) < 7:
+                                    continue
+                                
+                                date_cell = cells[0]
+                                visitor_cell = cells[2]
+                                home_cell = cells[4]
+                                box_score_cell = cells[6]
+                                
+                                # Parse date
+                                date_text = date_cell.get_text(strip=True)
+                                if not date_text:
+                                    continue
+                                
+                                try:
+                                    # Parse date like "Tue, Oct 29, 2025"
+                                    game_date = datetime.strptime(date_text, '%a, %b %d, %Y').date()
+                                except:
+                                    try:
+                                        # Try alternate format
+                                        game_date = datetime.strptime(date_text, '%A, %B %d, %Y').date()
+                                    except:
+                                        continue
+                                
+                                # Only include games for today or tomorrow
+                                if game_date not in [today, tomorrow]:
+                                    continue
+                                
+                                # Check if game has started (has box score link)
+                                box_score_link = box_score_cell.find('a')
+                                if box_score_link and box_score_link.get('href'):
+                                    # Game has started or finished, skip it
+                                    continue
+                                
+                                visitor_team = visitor_cell.get_text(strip=True)
+                                home_team = home_cell.get_text(strip=True)
+                                
+                                if visitor_team and home_team:
+                                    upcoming_games.append({
+                                        'date': date_text,
+                                        'visitor_team': visitor_team,
+                                        'home_team': home_team,
+                                        'season': season
+                                    })
+                                    logger.info(f"Found upcoming game: {visitor_team} @ {home_team} on {date_text}")
             
             logger.info(f"Found {len(upcoming_games)} upcoming games")
             

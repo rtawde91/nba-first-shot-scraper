@@ -8,11 +8,14 @@ import threading
 import pandas as pd
 import os
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
 from scraper_with_progress import BasketballReferenceScraperWithProgress, ProgressTracker
 from game_analyzer import analyze_all_games
 from nba_team_mappings import get_team_code, create_game_key, format_date_short
 import logging
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+import atexit
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +27,10 @@ app = Flask(__name__)
 progress_tracker = ProgressTracker()
 scraper_instance = None
 scraper_thread = None
+
+# Global scheduler
+scheduler = BackgroundScheduler()
+scheduler_running = False
 
 
 def load_data_from_csv():
@@ -350,6 +357,8 @@ def calculate_player_scores(analysis):
         highlights = game.get('highlights', {})
         visitor_starters = game.get('visitor_starters', [])
         home_starters = game.get('home_starters', [])
+        visitor_team = game.get('visitor_team', '')
+        home_team = game.get('home_team', '')
         game_key = game.get('game_key', '')
         game_date = game.get('date', '')
         game_matchup = game.get('matchup', '')
@@ -360,10 +369,14 @@ def calculate_player_scores(analysis):
             if not player or player == '':
                 continue
             
+            # Determine player's team
+            player_team = visitor_team if player in visitor_starters else home_team
+            
             if player not in player_scores:
                 player_scores[player] = {
                     'shot_score': 0.0,
                     'games_started': 0,
+                    'team': player_team,  # Store player's primary team
                     'game_details': []  # Track individual game contributions
                 }
             
@@ -404,6 +417,7 @@ def calculate_player_scores(analysis):
                 'game_key': game_key,
                 'date': game_date,
                 'matchup': game_matchup,
+                'team': player_team,  # Include player's team for this game
                 'actions': actions,
                 'game_score': game_score
             })
@@ -412,7 +426,7 @@ def calculate_player_scores(analysis):
 
 
 def load_upcoming_games():
-    """Load upcoming games from CSV"""
+    """Load upcoming games from CSV - filtered to today and tomorrow only"""
     upcoming_file = 'upcoming_games.csv'
     
     if not os.path.exists(upcoming_file):
@@ -420,7 +434,25 @@ def load_upcoming_games():
     
     try:
         df_upcoming = pd.read_csv(upcoming_file).fillna('')
-        upcoming_games = df_upcoming.to_dict('records')
+        
+        # Get today and tomorrow's dates in the format used in the CSV (MM/DD/YYYY)
+        today = datetime.now().date()
+        tomorrow = today + timedelta(days=1)
+        
+        # Convert to strings that match the CSV format (e.g., "10/27/2025")
+        today_str = today.strftime('%m/%d/%Y')
+        tomorrow_str = tomorrow.strftime('%m/%d/%Y')
+        
+        # Filter to only include today and tomorrow's games
+        if 'date' in df_upcoming.columns:
+            df_filtered = df_upcoming[df_upcoming['date'].isin([today_str, tomorrow_str])]
+            upcoming_games = df_filtered.to_dict('records')
+            logger.info(f"Loaded {len(upcoming_games)} upcoming games for {today_str} and {tomorrow_str}")
+        else:
+            # Fallback if date column not found
+            upcoming_games = df_upcoming.to_dict('records')
+            logger.warning("Date column not found in upcoming_games.csv - returning all games")
+        
         return upcoming_games
     except Exception as e:
         logger.error(f"Error loading upcoming games: {e}")
@@ -559,6 +591,134 @@ def get_stats():
     return jsonify({'total_games': 0, 'total_plays': 0, 'upcoming_games': 0})
 
 
+def scheduled_daily_update():
+    """Scheduled job that runs full cycle every day at 7 AM"""
+    global scraper_instance, scraper_thread
+    
+    logger.info("="*70)
+    logger.info("🕐 SCHEDULED DAILY UPDATE STARTED (7:00 AM)")
+    logger.info("="*70)
+    
+    # Check if another scraping job is running
+    if scraper_thread and scraper_thread.is_alive():
+        logger.warning("⚠️ Scraping job already in progress, skipping scheduled update")
+        return
+    
+    def run_scheduled_cycle():
+        global scraper_instance
+        try:
+            if not scraper_instance:
+                scraper_instance = BasketballReferenceScraperWithProgress(progress_tracker)
+            
+            logger.info("Starting scheduled full cycle...")
+            
+            # Phase 1: Schedule
+            scraper_instance.scrape_schedule(seasons=['2026'])
+            
+            # Phase 2: Rosters
+            scraper_instance.scrape_rosters()
+            
+            # Phase 3: Play-by-Play
+            scraper_instance.scrape_play_by_play()
+            
+            # Phase 4: Upcoming Games
+            scraper_instance.scrape_upcoming(seasons=['2026'])
+            
+            # Save all data
+            scraper_instance.save_to_csv()
+            
+            logger.info("="*70)
+            logger.info("✅ SCHEDULED DAILY UPDATE COMPLETED SUCCESSFULLY")
+            logger.info("="*70)
+        except Exception as e:
+            logger.error(f"❌ Error in scheduled daily update: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+    
+    scraper_thread = threading.Thread(target=run_scheduled_cycle, daemon=True)
+    scraper_thread.start()
+
+
+@app.route('/api/scheduler/status')
+def get_scheduler_status():
+    """Get scheduler status"""
+    global scheduler_running
+    
+    jobs = scheduler.get_jobs()
+    next_run = None
+    if jobs:
+        next_run = jobs[0].next_run_time.strftime('%Y-%m-%d %H:%M:%S') if jobs[0].next_run_time else None
+    
+    return jsonify({
+        'enabled': scheduler_running,
+        'next_run': next_run,
+        'schedule': '7:00 AM daily' if scheduler_running else 'Not scheduled'
+    })
+
+
+@app.route('/api/scheduler/start', methods=['POST'])
+def start_scheduler():
+    """Start the daily scheduler"""
+    global scheduler_running
+    
+    try:
+        # Remove existing jobs
+        scheduler.remove_all_jobs()
+        
+        # Add daily job at 7 AM
+        scheduler.add_job(
+            func=scheduled_daily_update,
+            trigger=CronTrigger(hour=7, minute=0),
+            id='daily_update',
+            name='Daily Full Cycle Update',
+            replace_existing=True
+        )
+        
+        if not scheduler.running:
+            scheduler.start()
+        
+        scheduler_running = True
+        
+        logger.info("✅ Daily scheduler started - will run at 7:00 AM every day")
+        
+        return jsonify({
+            'message': 'Daily scheduler started',
+            'schedule': '7:00 AM daily'
+        })
+    except Exception as e:
+        logger.error(f"Error starting scheduler: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/scheduler/stop', methods=['POST'])
+def stop_scheduler():
+    """Stop the daily scheduler"""
+    global scheduler_running
+    
+    try:
+        scheduler.remove_all_jobs()
+        scheduler_running = False
+        
+        logger.info("⏸️ Daily scheduler stopped")
+        
+        return jsonify({'message': 'Daily scheduler stopped'})
+    except Exception as e:
+        logger.error(f"Error stopping scheduler: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/scheduler/run_now', methods=['POST'])
+def run_scheduler_now():
+    """Manually trigger the scheduled job immediately"""
+    try:
+        logger.info("▶️ Manually triggering scheduled update...")
+        scheduled_daily_update()
+        return jsonify({'message': 'Scheduled update triggered manually'})
+    except Exception as e:
+        logger.error(f"Error running scheduled update: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("\n" + "="*70)
     print("🏀 Basketball Reference Scraper - 4-Phase System + Full Cycle")
@@ -578,7 +738,15 @@ if __name__ == '__main__':
     print("   - Real-time progress tracking")
     print("   - Live data preview in tables")
     print("   - Auto-refresh every 30 seconds")
+    print("   - ⏰ Daily Automatic Updates (7:00 AM)")
     print("\n" + "="*70 + "\n")
     
-    app.run(debug=True, host='0.0.0.0', port=8080, use_reloader=False)
+    # Register shutdown handler for scheduler
+    atexit.register(lambda: scheduler.shutdown())
+    
+    # Use PORT from environment for cloud deployment, default to 8080 for local
+    port = int(os.environ.get('PORT', 8080))
+    debug_mode = os.environ.get('FLASK_ENV') != 'production'
+    
+    app.run(debug=debug_mode, host='0.0.0.0', port=port, use_reloader=False)
 

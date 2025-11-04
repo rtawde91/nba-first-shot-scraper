@@ -387,6 +387,37 @@
             <p><strong>Phase 1:</strong> Fetches the game schedule → <strong>Phase 2:</strong> Gets rosters & injuries → <strong>Phase 3:</strong> Collects play-by-play until first FG → <strong>Phase 4:</strong> Gets upcoming games (today/tomorrow)</p>
         </div>
 
+        <!-- Scheduler Card -->
+        <div class="phase-card" style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h3 style="margin-bottom: 10px; color: #667eea;">⏰ Automatic Daily Updates</h3>
+                    <p style="color: #718096; font-size: 14px; margin-bottom: 10px;">
+                        Automatically run the full cycle every day at 7:00 AM to keep data fresh.
+                    </p>
+                    <div id="schedulerStatus" style="padding: 10px; background: #f7fafc; border-radius: 6px; margin-top: 10px;">
+                        <p style="margin: 0; font-size: 13px;">
+                            <strong>Status:</strong> <span id="schedulerEnabled" style="font-weight: 600;">Loading...</span>
+                        </p>
+                        <p style="margin: 5px 0 0 0; font-size: 13px;">
+                            <strong>Next Run:</strong> <span id="schedulerNextRun">-</span>
+                        </p>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-primary" id="schedulerStartBtn" onclick="startScheduler()" style="background: #48bb78;">
+                        ▶️ Enable
+                    </button>
+                    <button class="btn btn-secondary" id="schedulerStopBtn" onclick="stopScheduler()">
+                        ⏸️ Disable
+                    </button>
+                    <button class="btn btn-secondary" onclick="runSchedulerNow()">
+                        ⚡ Run Now
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div style="text-align: center; margin-bottom: 20px;">
             <button class="btn btn-primary" onclick="startFullCycle()" style="font-size: 18px; padding: 15px 40px; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);">
                 ⚡ Run Full Cycle (All 4 Phases)
@@ -646,6 +677,79 @@
             }
         }
 
+        async function updateSchedulerStatus() {
+            try {
+                const response = await fetch('/api/scheduler/status');
+                const data = await response.json();
+                
+                const enabledSpan = document.getElementById('schedulerEnabled');
+                const nextRunSpan = document.getElementById('schedulerNextRun');
+                
+                if (data.enabled) {
+                    enabledSpan.textContent = '✅ Enabled';
+                    enabledSpan.style.color = '#48bb78';
+                    nextRunSpan.textContent = data.next_run || 'Calculating...';
+                } else {
+                    enabledSpan.textContent = '⏸️ Disabled';
+                    enabledSpan.style.color = '#f56565';
+                    nextRunSpan.textContent = '-';
+                }
+            } catch (error) {
+                console.error('Error updating scheduler status:', error);
+            }
+        }
+
+        async function startScheduler() {
+            try {
+                const response = await fetch('/api/scheduler/start', { method: 'POST' });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('✅ Daily scheduler enabled! Full cycle will run at 7:00 AM every day.');
+                    updateSchedulerStatus();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to start scheduler'));
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function stopScheduler() {
+            try {
+                const response = await fetch('/api/scheduler/stop', { method: 'POST' });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('⏸️ Daily scheduler disabled.');
+                    updateSchedulerStatus();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to stop scheduler'));
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function runSchedulerNow() {
+            if (!confirm('Run the full cycle now (all 4 phases)?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/scheduler/run_now', { method: 'POST' });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('⚡ Scheduled update triggered! All 4 phases will run now.');
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to trigger update'));
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
         async function updateStatus() {
             try {
                 const response = await fetch('/api/status');
@@ -824,11 +928,13 @@
 
         // Initial update - load from CSV to show previously scraped data
         updateStatus();
+        updateSchedulerStatus();
         updatePreview(true); // Load from CSV on first load
         
         // Auto-refresh every 30 seconds
         setInterval(() => {
             updateStatus();
+            updateSchedulerStatus();
             updatePreview(); // Load live data during scraping
         }, 30000);
         
